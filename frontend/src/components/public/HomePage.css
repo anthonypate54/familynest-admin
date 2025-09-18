@@ -1,0 +1,160 @@
+/* FamilyNest Green to Blue Gradient (matches mobile app) */
+.familynest-green {
+  background: linear-gradient(to bottom, #4CAF50, #2196F3);
+  min-height: 100vh;
+}
+
+.familynest-nav {
+  background: white;
+  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1);
+  margin-bottom: 2rem; /* Add space below navigation */
+  padding: 0.5rem 0; /* Add vertical padding */
+}
+
+.familynest-nav .flex {
+  align-items: center;
+  justify-content: space-between;
+}
+
+.familynest-nav-links {
+  display: flex;
+  align-items: center;
+  gap: 1rem; /* Add gap between navigation links */
+}
+
+.familynest-logo {
+  color: #16a34a; /* green-600 */
+}
+
+.familynest-nav-link {
+  color: #374151; /* gray-700 */
+  transition: all 0.15s ease-in-out;
+  text-decoration: none;
+  font-weight: 500;
+  padding: 0.75rem 1.5rem; /* Increased padding around nav links */
+  margin: 0 0.75rem; /* Increased margin between nav links */
+  border-radius: 0.5rem; /* More rounded corners */
+  display: inline-block; /* Ensure proper spacing */
+}
+
+.familynest-nav-link:hover {
+  color: #16a34a; /* green-600 */
+  background-color: #f3f4f6; /* light gray background on hover */
+  transform: translateY(-1px); /* Subtle lift effect */
+}
+
+.familynest-admin-btn {
+  background-color: #16a34a; /* green-600 */
+  color: white;
+  padding: 8px 16px;
+  border-radius: 6px;
+  font-weight: 600;
+  text-decoration: none;
+  transition: background-color 0.15s ease-in-out;
+}
+
+.familynest-admin-btn:hover {
+  background-color: #15803d; /* green-700 */
+  color: white;
+  text-decoration: none;
+}
+
+.familynest-hero-accent {
+  color: #ffffff; /* white */
+}
+
+.familynest-btn-primary {
+  background-color: #16a34a; /* green-600 */
+  color: white;
+  padding: 12px 32px;
+  border-radius: 8px;
+  font-weight: 600;
+  transition: background-color 0.15s ease-in-out;
+}
+
+.familynest-btn-primary:hover {
+  background-color: #15803d; /* green-700 */
+}
+
+.familynest-btn-secondary {
+  background-color: #3b82f6; /* blue-500 */
+  color: white;
+  padding: 12px 32px;
+  border-radius: 8px;
+  font-weight: 600;
+  transition: background-color 0.15s ease-in-out;
+}
+
+.familynest-btn-secondary:hover {
+  background-color: #2563eb; /* blue-600 */
+}
+
+.familynest-feature-icon {
+  background-color: #dcfce7; /* green-100 */
+  color: #16a34a; /* green-600 */
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 16px;
+}
+
+.familynest-cta {
+  background-color: #16a34a; /* green-600 */
+  color: white;
+  padding: 64px 0;
+}
+
+.familynest-cta-text {
+  color: #dcfce7; /* green-100 */
+}
+
+.familynest-cta-btn {
+  background-color: white;
+  color: #16a34a; /* green-600 */
+  padding: 12px 32px;
+  border-radius: 8px;
+  font-weight: 600;
+  transition: background-color 0.15s ease-in-out;
+}
+
+.familynest-cta-btn:hover {
+  background-color: #f3f4f6; /* gray-100 */
+}
+
+.familynest-footer-logo {
+  color: #4ade80; /* green-400 */
+}
+
+/* Hero section styling */
+.familynest-hero {
+  padding-top: 4rem; /* Increased top padding for more space from nav */
+  padding-bottom: 3rem;
+}
+
+.familynest-hero-title {
+  font-size: 3rem; /* 48px - smaller title */
+  font-weight: 700;
+  line-height: 1.1;
+  margin-bottom: 1.5rem; /* Reduced space below title */
+}
+
+.familynest-hero-subtitle {
+  font-size: 1.5rem; /* 24px */
+  line-height: 1.6;
+  margin-bottom: 2.5rem;
+  color: #4b5563; /* gray-600 */
+}
+
+/* Responsive title sizes */
+@media (max-width: 768px) {
+  .familynest-hero-title {
+    font-size: 2.25rem; /* 36px on mobile */
+  }
+  
+  .familynest-hero-subtitle {
+    font-size: 1.125rem; /* 18px on mobile */
+  }
+}
