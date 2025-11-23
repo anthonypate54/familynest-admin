@@ -65,6 +65,7 @@ const ContactPage: React.FC = () => {
             <div className="familynest-nav-links">
               <Link to="/" className="familynest-nav-link">Home</Link>
               <Link to="/about" className="familynest-nav-link">About</Link>
+              <Link to="/contact" className="familynest-nav-link">Contact</Link>
             </div>
           </div>
         </div>
@@ -89,61 +90,27 @@ const ContactPage: React.FC = () => {
       {/* Contact Methods */}
       <section className="py-16 bg-gray-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="grid md:grid-cols-3 gap-8">
+          <div className="max-w-2xl mx-auto">
             <div className="bg-white rounded-xl p-8 shadow-sm border border-gray-200 text-center">
-              <div className="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center mx-auto mb-6">
-                <Mail className="w-6 h-6 text-green-600" />
+              <div className="w-16 h-16 bg-green-100 rounded-lg flex items-center justify-center mx-auto mb-6">
+                <Mail className="w-8 h-8 text-green-600" />
               </div>
-              <h3 className="text-xl font-semibold text-gray-900 mb-4">Email Support</h3>
-              <p className="text-gray-600 mb-4">
-                Get help with technical issues, billing questions, or general inquiries.
+              <h3 className="text-2xl font-semibold text-gray-900 mb-4">Email Support</h3>
+              <p className="text-gray-600 mb-6 text-lg">
+                Get help with technical issues, billing questions, account management, or general inquiries.
               </p>
               <a 
-                href="mailto:support@familynest.com" 
-                className="text-green-600 font-semibold hover:text-green-700 inline-flex items-center"
+                href="mailto:support@infamilynest.com" 
+                className="inline-flex items-center text-green-600 font-semibold hover:text-green-700 text-lg mb-4"
               >
-                support@familynest.com
-                <Mail className="ml-2 h-4 w-4" />
+                <Mail className="mr-2 h-5 w-5" />
+                support@infamilynest.com
               </a>
-              <div className="mt-4 text-sm text-gray-500">
-                Response time: 2-4 hours
-              </div>
-            </div>
-            
-            <div className="bg-white rounded-xl p-8 shadow-sm border border-gray-200 text-center">
-              <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center mx-auto mb-6">
-                <MessageCircle className="w-6 h-6 text-blue-600" />
-              </div>
-              <h3 className="text-xl font-semibold text-gray-900 mb-4">Live Chat</h3>
-              <p className="text-gray-600 mb-4">
-                Chat with our support team in real-time for immediate assistance.
-              </p>
-              <button className="text-blue-600 font-semibold hover:text-blue-700 inline-flex items-center">
-                Start Chat
-                <MessageCircle className="ml-2 h-4 w-4" />
-              </button>
-              <div className="mt-4 text-sm text-gray-500">
-                Available 9 AM - 6 PM PST
-              </div>
-            </div>
-            
-            <div className="bg-white rounded-xl p-8 shadow-sm border border-gray-200 text-center">
-              <div className="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center mx-auto mb-6">
-                <Phone className="w-6 h-6 text-purple-600" />
-              </div>
-              <h3 className="text-xl font-semibold text-gray-900 mb-4">Phone Support</h3>
-              <p className="text-gray-600 mb-4">
-                Speak directly with our team for complex issues or urgent matters.
-              </p>
-              <a 
-                href="tel:+1-555-FAMILY" 
-                className="text-purple-600 font-semibold hover:text-purple-700 inline-flex items-center"
-              >
-                +1 (555) FAMILY
-                <Phone className="ml-2 h-4 w-4" />
-              </a>
-              <div className="mt-4 text-sm text-gray-500">
-                Available 9 AM - 6 PM PST
+              <div className="mt-6 pt-6 border-t border-gray-200">
+                <div className="flex items-center justify-center text-sm text-gray-500">
+                  <Clock className="w-4 h-4 mr-2" />
+                  We typically respond within 24 hours during business hours (Monday-Friday, 9 AM - 6 PM PST)
+                </div>
               </div>
             </div>
           </div>
@@ -151,100 +118,140 @@ const ContactPage: React.FC = () => {
       </section>
 
       {/* Contact Form */}
-      <section className="py-20">
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-12">
-            <h2 className="text-4xl font-bold text-gray-900 mb-4">Send us a message</h2>
-            <p className="text-lg text-gray-600">
+      <section style={{ padding: '80px 24px' }}>
+        <div style={{ maxWidth: '700px', margin: '0 auto' }}>
+          <div style={{ textAlign: 'center', marginBottom: '48px' }}>
+            <h2 style={{ fontSize: '36px', fontWeight: 'bold', color: '#1f2937', marginBottom: '16px' }}>Send us a message</h2>
+            <p style={{ fontSize: '18px', color: '#6b7280' }}>
               Fill out the form below and we'll get back to you as soon as possible.
             </p>
           </div>
 
           {isSubmitted ? (
-            <div className="bg-green-50 border border-green-200 rounded-lg p-8 text-center">
+            <div style={{ 
+              background: '#f0fdf4', 
+              border: '1px solid #86efac', 
+              borderRadius: '12px', 
+              padding: '48px 32px', 
+              textAlign: 'center' 
+            }}>
               <CheckCircle className="w-12 h-12 text-green-600 mx-auto mb-4" />
-              <h3 className="text-xl font-semibold text-green-900 mb-2">Message sent successfully!</h3>
-              <p className="text-green-700">
-                Thank you for reaching out. We'll respond to your message within 2-4 hours during business hours.
+              <h3 style={{ fontSize: '20px', fontWeight: '600', color: '#166534', marginBottom: '8px' }}>Message sent successfully!</h3>
+              <p style={{ color: '#15803d' }}>
+                Thank you for reaching out. We'll respond within 24 hours during business hours.
               </p>
             </div>
           ) : (
-            <div className="bg-white rounded-xl shadow-lg border border-gray-200 p-8">
-              <form onSubmit={handleSubmit} className="space-y-6">
-                <div className="grid md:grid-cols-2 gap-6">
-                  <div>
-                    <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-2">
-                      Full Name *
-                    </label>
-                    <input
-                      type="text"
-                      id="name"
-                      name="name"
-                      value={formData.name}
-                      onChange={handleChange}
-                      required
-                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent transition-colors"
-                      placeholder="Your full name"
-                    />
-                  </div>
-
-                  <div>
-                    <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-2">
-                      Email Address *
-                    </label>
-                    <input
-                      type="email"
-                      id="email"
-                      name="email"
-                      value={formData.email}
-                      onChange={handleChange}
-                      required
-                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent transition-colors"
-                      placeholder="your@email.com"
-                    />
-                  </div>
-                </div>
-
-                <div className="grid md:grid-cols-2 gap-6">
-                  <div>
-                    <label htmlFor="category" className="block text-sm font-medium text-gray-700 mb-2">
-                      Category
-                    </label>
-                    <select
-                      id="category"
-                      name="category"
-                      value={formData.category}
-                      onChange={handleChange}
-                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent transition-colors"
-                    >
-                      <option value="general">General Inquiry</option>
-                      <option value="support">Technical Support</option>
-                      <option value="billing">Billing Question</option>
-                      <option value="feature">Feature Request</option>
-                      <option value="bug">Bug Report</option>
-                      <option value="press">Press & Media</option>
-                    </select>
-                  </div>
-
-                  <div>
-                    <label htmlFor="subject" className="block text-sm font-medium text-gray-700 mb-2">
-                      Subject *
-                    </label>
-                    <input
-                      type="text"
-                      id="subject"
-                      name="subject"
-                      value={formData.subject}
-                      onChange={handleChange}
-                      required
-                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent transition-colors"
-                      placeholder="Brief description of your inquiry"
-                    />
-                  </div>
+            <div style={{ 
+              background: 'white', 
+              borderRadius: '16px', 
+              boxShadow: '0 10px 30px rgba(0,0,0,0.1)', 
+              border: '1px solid #e5e7eb', 
+              padding: '40px' 
+            }}>
+              <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+                <div>
+                  <label htmlFor="name" style={{ display: 'block', fontSize: '14px', fontWeight: '500', color: '#374151', marginBottom: '8px' }}>
+                    Full Name *
+                  </label>
+                  <input
+                    type="text"
+                    id="name"
+                    name="name"
+                    value={formData.name}
+                    onChange={handleChange}
+                    required
+                    style={{ 
+                      width: '100%', 
+                      padding: '12px 16px', 
+                      border: '2px solid #e5e7eb', 
+                      borderRadius: '8px',
+                      fontSize: '16px',
+                      transition: 'all 0.2s',
+                      boxSizing: 'border-box'
+                    }}
+                    placeholder="Your full name"
+                  />
                 </div>
 
                 <div>
-                  <label htmlFor="message" className="block text-sm font-medium text-gray-700 mb-2">
+                  <label htmlFor="email" style={{ display: 'block', fontSize: '14px', fontWeight: '500', color: '#374151', marginBottom: '8px' }}>
+                    Email Address *
+                  </label>
+                  <input
+                    type="email"
+                    id="email"
+                    name="email"
+                    value={formData.email}
+                    onChange={handleChange}
+                    required
+                    style={{ 
+                      width: '100%', 
+                      padding: '12px 16px', 
+                      border: '2px solid #e5e7eb', 
+                      borderRadius: '8px',
+                      fontSize: '16px',
+                      transition: 'all 0.2s',
+                      boxSizing: 'border-box'
+                    }}
+                    placeholder="your@email.com"
+                  />
+                </div>
+
+                <div>
+                  <label htmlFor="subject" style={{ display: 'block', fontSize: '14px', fontWeight: '500', color: '#374151', marginBottom: '8px' }}>
+                    Subject *
+                  </label>
+                  <input
+                    type="text"
+                    id="subject"
+                    name="subject"
+                    value={formData.subject}
+                    onChange={handleChange}
+                    required
+                    style={{ 
+                      width: '100%', 
+                      padding: '12px 16px', 
+                      border: '2px solid #e5e7eb', 
+                      borderRadius: '8px',
+                      fontSize: '16px',
+                      transition: 'all 0.2s',
+                      boxSizing: 'border-box'
+                    }}
+                    placeholder="Brief description of your inquiry"
+                  />
+                </div>
+
+                <div>
+                  <label htmlFor="category" style={{ display: 'block', fontSize: '14px', fontWeight: '500', color: '#374151', marginBottom: '8px' }}>
+                    Category
+                  </label>
+                  <select
+                    id="category"
+                    name="category"
+                    value={formData.category}
+                    onChange={handleChange}
+                    style={{ 
+                      width: '100%', 
+                      padding: '12px 16px', 
+                      border: '2px solid #e5e7eb', 
+                      borderRadius: '8px',
+                      fontSize: '16px',
+                      transition: 'all 0.2s',
+                      boxSizing: 'border-box',
+                      background: 'white'
+                    }}
+                  >
+                    <option value="general">General Inquiry</option>
+                    <option value="support">Technical Support</option>
+                    <option value="billing">Billing Question</option>
+                    <option value="feature">Feature Request</option>
+                    <option value="bug">Bug Report</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label htmlFor="message" style={{ display: 'block', fontSize: '14px', fontWeight: '500', color: '#374151', marginBottom: '8px' }}>
                     Message *
                   </label>
                   <textarea
@@ -254,14 +261,41 @@ const ContactPage: React.FC = () => {
                     onChange={handleChange}
                     rows={6}
                     required
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent transition-colors"
+                    style={{ 
+                      width: '100%', 
+                      padding: '12px 16px', 
+                      border: '2px solid #e5e7eb', 
+                      borderRadius: '8px',
+                      fontSize: '16px',
+                      transition: 'all 0.2s',
+                      boxSizing: 'border-box',
+                      fontFamily: 'inherit',
+                      resize: 'vertical'
+                    }}
                     placeholder="Please provide as much detail as possible..."
                   />
                 </div>
 
                 <button
                   type="submit"
-                  className="w-full bg-green-600 text-white py-4 px-6 rounded-lg hover:bg-green-700 transition-colors flex items-center justify-center font-semibold text-lg"
+                  style={{
+                    width: '100%',
+                    background: '#16a34a',
+                    color: 'white',
+                    padding: '16px 24px',
+                    borderRadius: '8px',
+                    border: 'none',
+                    fontSize: '18px',
+                    fontWeight: '600',
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    transition: 'background 0.2s',
+                    boxShadow: '0 4px 6px rgba(22, 163, 74, 0.2)'
+                  }}
+                  onMouseEnter={(e) => e.currentTarget.style.background = '#15803d'}
+                  onMouseLeave={(e) => e.currentTarget.style.background = '#16a34a'}
                 >
                   <Send className="w-5 h-5 mr-2" />
                   Send Message
@@ -273,8 +307,8 @@ const ContactPage: React.FC = () => {
       </section>
 
       {/* FAQ Section */}
-      <section className="py-20 bg-gray-50">
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+      <section style={{ padding: '80px 24px', background: '#f9fafb' }}>
+        <div style={{ maxWidth: '900px', margin: '0 auto' }}>
           <div className="text-center mb-12">
             <h2 className="text-4xl font-bold text-gray-900 mb-4">Frequently Asked Questions</h2>
             <p className="text-lg text-gray-600">
@@ -286,9 +320,9 @@ const ContactPage: React.FC = () => {
             <div className="bg-white rounded-lg p-6 shadow-sm border border-gray-200">
               <h3 className="text-xl font-semibold text-gray-900 mb-3">How secure is my family's data?</h3>
               <p className="text-gray-600 leading-relaxed">
-                Security is our top priority. We use military-grade AES-256 encryption for all data, both in transit and at rest. 
-                Your photos and messages are encrypted end-to-end, meaning only you and your family members can access them. 
-                We never share your data with third parties and undergo regular security audits.
+                Security is our top priority. Your photos and messages are stored securely on AWS infrastructure
+                with encryption in transit (HTTPS). We never share your data with third parties or advertisers.
+                Your family content is private and only accessible to family members you invite.
               </p>
             </div>
             
@@ -309,56 +343,17 @@ const ContactPage: React.FC = () => {
             </div>
 
             <div className="bg-white rounded-lg p-6 shadow-sm border border-gray-200">
-              <h3 className="text-xl font-semibold text-gray-900 mb-3">Do you offer enterprise solutions?</h3>
+              <h3 className="text-xl font-semibold text-gray-900 mb-3">How do I delete my account?</h3>
               <p className="text-gray-600 leading-relaxed">
-                While FamilyNest is designed for families, we're exploring enterprise solutions for organizations that want 
-                to help their employees stay connected with their families. Contact us if you're interested in learning more.
+                You can delete your account at any time directly from the app. Go to Profile → Settings → Delete Account.
+                All your data will be permanently removed. If you have an active subscription, you'll need to cancel it first
+                through the App Store before deleting your account.
               </p>
             </div>
           </div>
         </div>
       </section>
 
-      {/* Office Section */}
-      <section className="py-20">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="grid lg:grid-cols-2 gap-16 items-center">
-            <div>
-              <h2 className="text-4xl font-bold text-gray-900 mb-6">Visit Our Office</h2>
-              <p className="text-lg text-gray-600 mb-8 leading-relaxed">
-                While we're a remote-first company with team members around the world, our headquarters is located 
-                in the heart of San Francisco. Drop by if you're in the neighborhood!
-              </p>
-              
-              <div className="space-y-4">
-                <div className="flex items-start">
-                  <MapPin className="h-6 w-6 text-green-600 mr-3 mt-1" />
-                  <div>
-                    <div className="font-semibold text-gray-900">FamilyNest HQ</div>
-                    <div className="text-gray-600">123 Family Street<br />San Francisco, CA 94102</div>
-                  </div>
-                </div>
-                
-                <div className="flex items-start">
-                  <Clock className="h-6 w-6 text-green-600 mr-3 mt-1" />
-                  <div>
-                    <div className="font-semibold text-gray-900">Office Hours</div>
-                    <div className="text-gray-600">Monday - Friday: 9:00 AM - 6:00 PM PST<br />Weekends: By appointment</div>
-                  </div>
-                </div>
-              </div>
-            </div>
-            
-            <div className="bg-gradient-to-br from-green-400 to-blue-500 rounded-2xl h-80 flex items-center justify-center">
-              <div className="text-white text-center">
-                <MapPin className="w-16 h-16 mx-auto mb-4 opacity-80" />
-                <div className="text-lg font-semibold">Interactive Map</div>
-                <div className="text-green-100">Coming Soon</div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
 
       {/* Footer */}
       <footer className="bg-gray-900 py-12">

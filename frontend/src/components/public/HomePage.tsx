@@ -34,6 +34,7 @@ const HomePage: React.FC = () => {
                   <span className="ml-2 text-xl font-bold text-gray-900">FamilyNest</span>
                 </div>
                 <div className="familynest-nav-links">
+                  <Link to="/" className="familynest-nav-link">Home</Link>
                   <Link to="/about" className="familynest-nav-link">About</Link>
                   <Link to="/contact" className="familynest-nav-link">Contact</Link>
                 </div>
@@ -132,8 +133,13 @@ const HomePage: React.FC = () => {
               <Heart className="h-6 w-6 text-green-400" />
               <span className="ml-2 text-white font-semibold">FamilyNest</span>
             </div>
-            <div className="text-gray-400 text-sm">
-              © 2025 FamilyNest. All rights reserved.
+            <div className="flex items-center">
+              <div className="text-gray-400 text-sm mr-4">
+                <a href="/privacy.html" className="text-gray-400 hover:text-white transition-colors">Privacy Policy</a>
+              </div>
+              <div className="text-gray-400 text-sm">
+                © 2025 FamilyNest. All rights reserved.
+              </div>
             </div>
           </div>
         </div>

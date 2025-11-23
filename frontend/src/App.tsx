@@ -9,6 +9,7 @@ import TestColors from './TestColors';
 import HomePage from './components/public/HomePage';
 import AboutPage from './components/public/AboutPage';
 import ContactPage from './components/public/ContactPage';
+import DeleteAccountPage from './components/public/DeleteAccountPage';
 
 // Admin Components
 import AdminLayout from './components/admin/AdminLayout';
@@ -35,6 +36,7 @@ function App() {
             <Route path="/" element={<HomePage />} />
             <Route path="/about" element={<AboutPage />} />
             <Route path="/contact" element={<ContactPage />} />
+            <Route path="/delete-account" element={<DeleteAccountPage />} />
             
             {/* Admin Login (Public) */}
             <Route path="/admin/login" element={<AdminLogin />} />

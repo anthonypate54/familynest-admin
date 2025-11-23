@@ -37,6 +37,7 @@ const AboutPage: React.FC = () => {
             </div>
             <div className="familynest-nav-links">
               <Link to="/" className="familynest-nav-link">Home</Link>
+              <Link to="/about" className="familynest-nav-link">About</Link>
               <Link to="/contact" className="familynest-nav-link">Contact</Link>
             </div>
           </div>
@@ -44,14 +45,27 @@ const AboutPage: React.FC = () => {
       </nav>
 
       {/* Hero Section */}
-      <section className="familynest-hero">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="max-w-4xl mx-auto text-center">
-            <h1 className="familynest-hero-title text-gray-900">
+      <section style={{ padding: '80px 24px' }}>
+        <div style={{ maxWidth: '1280px', margin: '0 auto' }}>
+          <div style={{ maxWidth: '900px', margin: '0 auto', textAlign: 'center' }}>
+            <h1 style={{ 
+              fontSize: '48px', 
+              fontWeight: 'bold', 
+              color: '#1f2937', 
+              marginBottom: '24px',
+              lineHeight: '1.2'
+            }}>
               Building the future of 
-              <span className="familynest-hero-accent"> family connection</span>
+              <span style={{ color: '#4CAF50' }}> family connection</span>
             </h1>
-            <p className="familynest-hero-subtitle max-w-3xl mx-auto">
+            <p style={{ 
+              fontSize: '20px', 
+              color: '#6b7280', 
+              lineHeight: '1.6', 
+              marginBottom: '32px',
+              maxWidth: '700px',
+              margin: '0 auto'
+            }}>
               We believe that technology should bring families closer together, not drive them apart. 
               FamilyNest is designed from the ground up to strengthen the bonds that matter most.
             </p>
@@ -75,33 +89,73 @@ const AboutPage: React.FC = () => {
       </section>
 
       {/* Stats Section */}
-      <section className="py-16 bg-gray-50">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-8">
-            <div className="text-center">
-              <div className="text-3xl font-bold text-gray-900 mb-2">10K+</div>
-              <div className="text-gray-600">Families Connected</div>
+      <section style={{ padding: '80px 0', background: 'white' }}>
+        <div style={{ maxWidth: '1280px', margin: '0 auto', padding: '0 24px' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '48px' }}>
+            <div style={{ textAlign: 'center' }}>
+              <div style={{ 
+                fontSize: '48px', 
+                fontWeight: 'bold', 
+                background: 'linear-gradient(to right, #4CAF50, #2196F3)',
+                WebkitBackgroundClip: 'text',
+                WebkitTextFillColor: 'transparent',
+                backgroundClip: 'text',
+                marginBottom: '12px'
+              }}>
+                Private
+              </div>
+              <div style={{ fontSize: '16px', color: '#6b7280', fontWeight: '500' }}>Your Data Stays Yours</div>
             </div>
-            <div className="text-center">
-              <div className="text-3xl font-bold text-gray-900 mb-2">50K+</div>
-              <div className="text-gray-600">Photos Shared</div>
+            <div style={{ textAlign: 'center' }}>
+              <div style={{ 
+                fontSize: '48px', 
+                fontWeight: 'bold', 
+                background: 'linear-gradient(to right, #4CAF50, #2196F3)',
+                WebkitBackgroundClip: 'text',
+                WebkitTextFillColor: 'transparent',
+                backgroundClip: 'text',
+                marginBottom: '12px'
+              }}>
+                Secure
+              </div>
+              <div style={{ fontSize: '16px', color: '#6b7280', fontWeight: '500' }}>End-to-End Encrypted</div>
             </div>
-            <div className="text-center">
-              <div className="text-3xl font-bold text-gray-900 mb-2">99.9%</div>
-              <div className="text-gray-600">Uptime</div>
+            <div style={{ textAlign: 'center' }}>
+              <div style={{ 
+                fontSize: '48px', 
+                fontWeight: 'bold', 
+                background: 'linear-gradient(to right, #4CAF50, #2196F3)',
+                WebkitBackgroundClip: 'text',
+                WebkitTextFillColor: 'transparent',
+                backgroundClip: 'text',
+                marginBottom: '12px'
+              }}>
+                Simple
+              </div>
+              <div style={{ fontSize: '16px', color: '#6b7280', fontWeight: '500' }}>Easy for All Ages</div>
             </div>
-            <div className="text-center">
-              <div className="text-3xl font-bold text-gray-900 mb-2">24/7</div>
-              <div className="text-gray-600">Support</div>
+            <div style={{ textAlign: 'center' }}>
+              <div style={{ 
+                fontSize: '48px', 
+                fontWeight: 'bold', 
+                background: 'linear-gradient(to right, #4CAF50, #2196F3)',
+                WebkitBackgroundClip: 'text',
+                WebkitTextFillColor: 'transparent',
+                backgroundClip: 'text',
+                marginBottom: '12px'
+              }}>
+                &lt;24h
+              </div>
+              <div style={{ fontSize: '16px', color: '#6b7280', fontWeight: '500' }}>Email Response Time</div>
             </div>
           </div>
         </div>
       </section>
 
       {/* Mission Section */}
-      <section className="py-20">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="grid lg:grid-cols-2 gap-16 items-center">
+      <section style={{ padding: '80px 24px' }}>
+        <div style={{ maxWidth: '1280px', margin: '0 auto' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '64px', alignItems: 'center' }}>
             <div>
               <h2 className="text-4xl font-bold text-gray-900 mb-6">Our Mission</h2>
               <p className="text-lg text-gray-600 mb-6 leading-relaxed">
@@ -140,8 +194,8 @@ const AboutPage: React.FC = () => {
       </section>
 
       {/* Values Section */}
-      <section className="py-20 bg-gray-50">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <section style={{ padding: '80px 24px', background: '#f9fafb' }}>
+        <div style={{ maxWidth: '1280px', margin: '0 auto' }}>
           <div className="text-center mb-16">
             <h2 className="text-4xl font-bold text-gray-900 mb-4">Our Values</h2>
             <p className="text-lg text-gray-600 max-w-2xl mx-auto">
@@ -186,38 +240,35 @@ const AboutPage: React.FC = () => {
         </div>
       </section>
 
-      {/* Team Section */}
-      <section className="py-20">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-16">
-            <h2 className="text-4xl font-bold text-gray-900 mb-4">Built by Families, for Families</h2>
-            <p className="text-lg text-gray-600 max-w-2xl mx-auto">
-              Our team understands the challenges of staying connected because we live them every day.
-            </p>
+      {/* Founder Section - Simple and Personal */}
+      <section style={{ padding: '80px 0', background: '#f9fafb' }}>
+        <div style={{ maxWidth: '800px', margin: '0 auto', padding: '0 24px', textAlign: 'center' }}>
+          <div style={{ 
+            width: '120px', 
+            height: '120px', 
+            background: 'linear-gradient(135deg, #4CAF50, #2196F3)',
+            borderRadius: '50%',
+            margin: '0 auto 24px',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            boxShadow: '0 10px 30px rgba(76, 175, 80, 0.3)'
+          }}>
+            <span style={{ fontSize: '48px', color: 'white', fontWeight: 'bold' }}>AP</span>
           </div>
-          
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
-            <div className="text-center">
-              <div className="w-24 h-24 bg-gradient-to-br from-green-400 to-blue-500 rounded-full mx-auto mb-4"></div>
-              <h3 className="text-lg font-semibold text-gray-900 mb-2">Anthony Pate</h3>
-              <p className="text-gray-600 mb-2">Founder & CEO</p>
-              <p className="text-sm text-gray-500">Father of 3, passionate about bringing families closer together</p>
-            </div>
-            
-            <div className="text-center">
-              <div className="w-24 h-24 bg-gradient-to-br from-purple-400 to-pink-500 rounded-full mx-auto mb-4"></div>
-              <h3 className="text-lg font-semibold text-gray-900 mb-2">Sarah Johnson</h3>
-              <p className="text-gray-600 mb-2">Head of Product</p>
-              <p className="text-sm text-gray-500">Mother of 2, expert in family-centered UX design</p>
-            </div>
-            
-            <div className="text-center">
-              <div className="w-24 h-24 bg-gradient-to-br from-orange-400 to-red-500 rounded-full mx-auto mb-4"></div>
-              <h3 className="text-lg font-semibold text-gray-900 mb-2">Michael Chen</h3>
-              <p className="text-gray-600 mb-2">Lead Engineer</p>
-              <p className="text-sm text-gray-500">Son, brother, uncle — builds with privacy and security first</p>
-            </div>
-          </div>
+          <h2 style={{ fontSize: '32px', fontWeight: 'bold', color: '#1f2937', marginBottom: '16px' }}>
+            Built by a Father, for Families
+          </h2>
+          <p style={{ fontSize: '18px', color: '#6b7280', lineHeight: '1.8', marginBottom: '24px' }}>
+            FamilyNest was created by <strong>Anthony Pate</strong>, a father who experienced firsthand 
+            the challenge of keeping extended family connected across distances. What started as a simple 
+            idea to share photos with grandparents grew into a mission to help all families stay close, 
+            no matter where life takes them.
+          </p>
+          <p style={{ fontSize: '16px', color: '#9ca3af', fontStyle: 'italic' }}>
+            "Every feature we build is tested with my own family first. If it doesn't bring us closer together, 
+            we don't ship it." — Anthony
+          </p>
         </div>
       </section>
 

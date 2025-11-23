@@ -94,3 +94,14 @@ router.post('/logout', requireAuth, (req, res) => {
 });
 
 module.exports = router;
+
+
+
+
+
+
+
+
+
+
+
