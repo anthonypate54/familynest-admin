@@ -118,7 +118,7 @@ const AboutPage: React.FC = () => {
               }}>
                 Secure
               </div>
-              <div style={{ fontSize: '16px', color: '#6b7280', fontWeight: '500' }}>End-to-End Encrypted</div>
+              <div style={{ fontSize: '16px', color: '#6b7280', fontWeight: '500' }}>HTTPS Encrypted</div>
             </div>
             <div style={{ textAlign: 'center' }}>
               <div style={{ 
