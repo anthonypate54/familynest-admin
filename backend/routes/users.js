@@ -17,19 +17,54 @@ router.get('/search', async (req, res) => {
       q = '',           // search query
       status = '',      // subscription status filter
       page = 0,         // page number
-      size = 20         // page size
+      size = 20,        // page size
+      sortBy = 'created_at',
+      sortOrder = 'desc'
     } = req.query;
+
+    // Whitelist of sortable columns -> one or more SQL expressions (in
+    // priority order, for tie-breaking - e.g. "name" sorts by last name
+    // then first name). Never interpolate req.query.sortBy directly into
+    // SQL - that's an easy SQL injection vector since ORDER BY can't be
+    // parameterized normally.
+    //
+    // Text expressions are wrapped in LOWER() so sorting is case-insensitive
+    // - otherwise Postgres's default collation sorts by byte value, which
+    // puts all uppercase letters before any lowercase letter (so "Zack"
+    // would sort before "adam").
+    //
+    // Also wrapped in NULLIF(col, '') so that an empty-string value (which
+    // several legacy rows have instead of a true NULL) is treated the same
+    // as "no value" and pushed to the end by NULLS LAST too - otherwise an
+    // empty string sorts BEFORE every real letter, so blank-last-name users
+    // would incorrectly float to the very top of an ascending sort.
+    const SORTABLE_COLUMNS = {
+      name: ["LOWER(NULLIF(u.last_name, ''))", "LOWER(NULLIF(u.first_name, ''))"],
+      subscription_status: ["LOWER(NULLIF(u.subscription_status, ''))"],
+      trial_end_date: ['u.trial_end_date'],
+      platform: ["LOWER(NULLIF(u.platform, ''))"],
+      current_monthly_price: ['latest_pt.current_monthly_price'],
+      total_paid: ['totals_pt.total_paid'],
+      created_at: ['u.created_at']
+    };
+    const sortExprs = SORTABLE_COLUMNS[sortBy] || SORTABLE_COLUMNS.created_at;
+    const sortDirection = String(sortOrder).toLowerCase() === 'asc' ? 'ASC' : 'DESC';
+    // Every expression in a multi-column sort (e.g. name) needs the same
+    // direction applied individually - "ORDER BY a, b DESC" would only
+    // apply DESC to b, not a.
+    const orderByClause = sortExprs.map(expr => `${expr} ${sortDirection} NULLS LAST`).join(', ');
     
     let whereClause = '1=1';
     const params = [];
     let paramIndex = 1;
     
-    // Search by email, first name, last name
+    // Search by email, first name, last name (aliased to u. - app_user is
+    // joined as "u" below so we can also pull real transaction data)
     if (q && q.trim()) {
       whereClause += ` AND (
-        LOWER(email) LIKE $${paramIndex} OR 
-        LOWER(first_name) LIKE $${paramIndex} OR 
-        LOWER(last_name) LIKE $${paramIndex}
+        LOWER(u.email) LIKE $${paramIndex} OR 
+        LOWER(u.first_name) LIKE $${paramIndex} OR 
+        LOWER(u.last_name) LIKE $${paramIndex}
       )`;
       params.push(`%${q.trim().toLowerCase()}%`);
       paramIndex++;
@@ -37,28 +72,54 @@ router.get('/search', async (req, res) => {
     
     // Filter by subscription status
     if (status && status.trim()) {
-      whereClause += ` AND subscription_status = $${paramIndex}`;
+      whereClause += ` AND u.subscription_status = $${paramIndex}`;
       params.push(status.trim());
       paramIndex++;
     }
     
+    // monthly_price on app_user is not populated by real purchase data (always 0),
+    // so derive real pricing from payment_transactions instead:
+    //   current_monthly_price = amount of the user's most recent actual charge
+    //   total_paid            = lifetime sum of all actual charges
+    // Only 'renewal' rows carry a real charge amount in this data (trial/
+    // cancelled/expired rows are correctly $0).
     const sql = `
       SELECT 
-        id, email, first_name, last_name,
-        subscription_status, trial_end_date, subscription_end_date,
-        platform, monthly_price, created_at, updated_at
-      FROM app_user 
+        u.id, u.email, u.first_name, u.last_name,
+        u.subscription_status, u.trial_end_date, u.subscription_end_date,
+        u.platform, u.created_at, u.updated_at,
+        latest_pt.current_monthly_price,
+        totals_pt.total_paid
+      FROM app_user u
+      LEFT JOIN (
+        SELECT DISTINCT ON (user_id) user_id, amount AS current_monthly_price
+        FROM payment_transactions
+        WHERE status = 'renewal' AND is_test = false
+        ORDER BY user_id, transaction_date DESC
+      ) latest_pt ON latest_pt.user_id = u.id
+      LEFT JOIN (
+        SELECT user_id, SUM(amount) AS total_paid
+        FROM payment_transactions
+        WHERE status = 'renewal' AND is_test = false
+        GROUP BY user_id
+      ) totals_pt ON totals_pt.user_id = u.id
       WHERE ${whereClause}
-      ORDER BY created_at DESC 
+      ORDER BY ${orderByClause}
       LIMIT $${paramIndex} OFFSET $${paramIndex + 1}
     `;
     
     params.push(parseInt(size), parseInt(page) * parseInt(size));
     
     const result = await db.query(sql, params);
+
+    // Cast numeric fields (pg returns NUMERIC as strings)
+    result.rows.forEach(row => {
+      row.current_monthly_price = row.current_monthly_price !== null ? Number(row.current_monthly_price) : null;
+      row.total_paid = row.total_paid !== null ? Number(row.total_paid) : null;
+    });
     
-    // Get total count
-    const countSql = `SELECT COUNT(*) FROM app_user WHERE ${whereClause}`;
+    // Get total count (app_user aliased as u to match whereClause)
+    const countSql = `SELECT COUNT(*) FROM app_user u WHERE ${whereClause}`;
     const countParams = params.slice(0, -2); // Remove LIMIT and OFFSET params
     const countResult = await db.query(countSql, countParams);
     
@@ -73,6 +134,10 @@ router.get('/search', async (req, res) => {
       filters: {
         query: q,
         status: status
+      },
+      sort: {
+        sortBy: Object.keys(SORTABLE_COLUMNS).includes(sortBy) ? sortBy : 'created_at',
+        sortOrder: sortDirection.toLowerCase()
       }
     });
     
@@ -81,6 +146,55 @@ router.get('/search', async (req, res) => {
     res.status(500).json({
       error: 'Search failed',
       message: 'Failed to search users'
+    });
+  }
+});
+
+/**
+ * GET /api/users/stats
+ * Get user statistics
+ * NOTE: must be defined before GET /:id, otherwise Express matches "stats"
+ * as an :id value and this route never gets hit.
+ */
+router.get('/stats', async (req, res) => {
+  try {
+    const sql = `
+      SELECT 
+        COUNT(*) as total_users,
+        COUNT(CASE WHEN subscription_status = 'trial' THEN 1 END) as trial_users,
+        COUNT(CASE WHEN subscription_status = 'active' THEN 1 END) as active_users,
+        COUNT(CASE WHEN subscription_status = 'expired' THEN 1 END) as expired_users,
+        COUNT(CASE WHEN subscription_status = 'cancelled' THEN 1 END) as cancelled_users,
+        COUNT(CASE WHEN created_at >= CURRENT_DATE - INTERVAL '7 days' THEN 1 END) as new_users_7d,
+        COUNT(CASE WHEN created_at >= CURRENT_DATE - INTERVAL '30 days' THEN 1 END) as new_users_30d,
+        COALESCE(SUM(CASE WHEN subscription_status = 'active' THEN monthly_price END), 0) as monthly_revenue
+      FROM app_user
+    `;
+    
+    const result = await db.query(sql);
+    const row = result.rows[0];
+
+    // pg returns COUNT()/SUM() as strings (to avoid precision loss on
+    // bigint/numeric), so cast to real numbers before sending JSON -
+    // otherwise consumers doing e.g. stats.monthly_revenue.toFixed(2) crash.
+    const stats = {
+      total_users: Number(row.total_users),
+      trial_users: Number(row.trial_users),
+      active_users: Number(row.active_users),
+      expired_users: Number(row.expired_users),
+      cancelled_users: Number(row.cancelled_users),
+      new_users_7d: Number(row.new_users_7d),
+      new_users_30d: Number(row.new_users_30d),
+      monthly_revenue: Number(row.monthly_revenue)
+    };
+
+    res.json({ stats });
+    
+  } catch (error) {
+    console.error('💥 User stats error:', error);
+    res.status(500).json({
+      error: 'Stats failed',
+      message: 'Failed to get user statistics'
     });
   }
 });
@@ -337,40 +451,6 @@ router.delete('/:id', async (req, res) => {
     res.status(500).json({
       error: 'Delete failed',
       message: 'Failed to delete user'
-    });
-  }
-});
-
-/**
- * GET /api/users/stats
- * Get user statistics
- */
-router.get('/stats', async (req, res) => {
-  try {
-    const sql = `
-      SELECT 
-        COUNT(*) as total_users,
-        COUNT(CASE WHEN subscription_status = 'trial' THEN 1 END) as trial_users,
-        COUNT(CASE WHEN subscription_status = 'active' THEN 1 END) as active_users,
-        COUNT(CASE WHEN subscription_status = 'expired' THEN 1 END) as expired_users,
-        COUNT(CASE WHEN subscription_status = 'cancelled' THEN 1 END) as cancelled_users,
-        COUNT(CASE WHEN created_at >= CURRENT_DATE - INTERVAL '7 days' THEN 1 END) as new_users_7d,
-        COUNT(CASE WHEN created_at >= CURRENT_DATE - INTERVAL '30 days' THEN 1 END) as new_users_30d,
-        COALESCE(SUM(CASE WHEN subscription_status = 'active' THEN monthly_price END), 0) as monthly_revenue
-      FROM app_user
-    `;
-    
-    const result = await db.query(sql);
-    
-    res.json({
-      stats: result.rows[0]
-    });
-    
-  } catch (error) {
-    console.error('💥 User stats error:', error);
-    res.status(500).json({
-      error: 'Stats failed',
-      message: 'Failed to get user statistics'
     });
   }
 });

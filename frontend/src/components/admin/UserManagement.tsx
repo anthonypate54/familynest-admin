@@ -1,17 +1,18 @@
 import React, { useState, useEffect } from 'react';
 import { api } from '../../contexts/AuthContext';
-import { Search, Filter, Calendar } from 'lucide-react';
+import { Search, Filter, Calendar, ChevronUp, ChevronDown, ChevronsUpDown } from 'lucide-react';
 
 interface User {
   id: number;
   email: string;
-  first_name: string;
-  last_name: string;
-  subscription_status: string;
+  first_name: string | null;
+  last_name: string | null;
+  subscription_status: string | null;
   trial_end_date: string | null;
   subscription_end_date: string | null;
   platform: string | null;
-  monthly_price: number | null;
+  current_monthly_price: number | null;
+  total_paid: number | null;
   created_at: string;
 }
 
@@ -22,11 +23,13 @@ const UserManagement: React.FC = () => {
   const [statusFilter, setStatusFilter] = useState('');
   const [currentPage, setCurrentPage] = useState(0);
   const [totalPages, setTotalPages] = useState(0);
+  const [sortBy, setSortBy] = useState('created_at');
+  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
 
   // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
     fetchUsers();
-  }, [searchQuery, statusFilter, currentPage]);
+  }, [searchQuery, statusFilter, currentPage, sortBy, sortOrder]);
 
   const fetchUsers = async () => {
     try {
@@ -36,7 +39,9 @@ const UserManagement: React.FC = () => {
           q: searchQuery,
           status: statusFilter,
           page: currentPage,
-          size: 20
+          size: 20,
+          sortBy,
+          sortOrder
         }
       });
       
@@ -49,7 +54,36 @@ const UserManagement: React.FC = () => {
     }
   };
 
-  const getStatusBadge = (status: string) => {
+  // Clicking a column: same column toggles direction, different column
+  // switches to it (defaulting to ascending) and resets to page 1, since
+  // the old page offset is meaningless under a new sort order.
+  const handleSort = (column: string) => {
+    if (sortBy === column) {
+      setSortOrder(prev => (prev === 'asc' ? 'desc' : 'asc'));
+    } else {
+      setSortBy(column);
+      setSortOrder('asc');
+    }
+    setCurrentPage(0);
+  };
+
+  const SortableHeader: React.FC<{ column: string; children: React.ReactNode }> = ({ column, children }) => (
+    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+      <button
+        onClick={() => handleSort(column)}
+        className="flex items-center gap-1 hover:text-gray-700"
+      >
+        {children}
+        {sortBy === column ? (
+          sortOrder === 'asc' ? <ChevronUp className="h-3.5 w-3.5" /> : <ChevronDown className="h-3.5 w-3.5" />
+        ) : (
+          <ChevronsUpDown className="h-3.5 w-3.5 text-gray-300" />
+        )}
+      </button>
+    </th>
+  );
+
+  const getStatusBadge = (status: string | null) => {
     const statusColors = {
       'trial': 'bg-yellow-100 text-yellow-800',
       'platform_trial': 'bg-yellow-100 text-yellow-800',
@@ -57,10 +91,12 @@ const UserManagement: React.FC = () => {
       'expired': 'bg-red-100 text-red-800',
       'cancelled': 'bg-gray-100 text-gray-800',
     };
+
+    const label = status || 'unknown';
     
     return (
-      <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${statusColors[status as keyof typeof statusColors] || 'bg-gray-100 text-gray-800'}`}>
-        {status.replace('_', ' ')}
+      <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${statusColors[label as keyof typeof statusColors] || 'bg-gray-100 text-gray-800'}`}>
+        {label.replace('_', ' ')}
       </span>
     );
   };
@@ -168,21 +204,12 @@ const UserManagement: React.FC = () => {
             <table className="min-w-full divide-y divide-gray-200">
               <thead className="bg-gray-50">
                 <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    User
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Status
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Trial End
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Platform
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Price
-                  </th>
+                  <SortableHeader column="name">User</SortableHeader>
+                  <SortableHeader column="subscription_status">Status</SortableHeader>
+                  <SortableHeader column="trial_end_date">Trial End</SortableHeader>
+                  <SortableHeader column="platform">Platform</SortableHeader>
+                  <SortableHeader column="current_monthly_price">Monthly</SortableHeader>
+                  <SortableHeader column="total_paid">Total Paid</SortableHeader>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Actions
                   </th>
@@ -209,7 +236,10 @@ const UserManagement: React.FC = () => {
                       {user.platform || 'N/A'}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                      {user.monthly_price ? `$${user.monthly_price}` : 'N/A'}
+                      {user.current_monthly_price !== null ? `$${user.current_monthly_price.toFixed(2)}` : 'N/A'}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                      {user.total_paid !== null ? `$${user.total_paid.toFixed(2)}` : 'N/A'}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium space-x-2">
                       <button
