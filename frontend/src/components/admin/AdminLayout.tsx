@@ -7,6 +7,7 @@ import {
   Users, 
   Settings, 
   Bell, 
+  Megaphone,
   LogOut
 } from 'lucide-react';
 
@@ -17,6 +18,7 @@ const AdminLayout: React.FC = () => {
   const navigation = [
     { name: 'Dashboard', href: '/admin/dashboard', icon: LayoutDashboard },
     { name: 'Users', href: '/admin/users', icon: Users },
+    { name: 'Marketing', href: '/admin/marketing', icon: Megaphone },
     { name: 'Settings', href: '/admin/settings', icon: Settings },
     { name: 'Notifications', href: '/admin/notifications', icon: Bell },
   ];

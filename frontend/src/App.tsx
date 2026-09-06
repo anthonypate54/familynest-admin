@@ -18,6 +18,7 @@ import AdminDashboard from './components/admin/AdminDashboard';
 import UserManagement from './components/admin/UserManagement';
 import Settings from './components/admin/Settings';
 import Notifications from './components/admin/Notifications';
+import MarketingExport from './components/admin/MarketingExport';
 
 // Auth Context
 import { AuthProvider } from './contexts/AuthContext';
@@ -50,6 +51,7 @@ function App() {
               <Route index element={<Navigate to="/admin/dashboard" replace />} />
               <Route path="dashboard" element={<AdminDashboard />} />
               <Route path="users" element={<UserManagement />} />
+              <Route path="marketing" element={<MarketingExport />} />
               <Route path="settings" element={<Settings />} />
               <Route path="notifications" element={<Notifications />} />
             </Route>
