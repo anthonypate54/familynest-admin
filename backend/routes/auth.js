@@ -93,6 +93,50 @@ router.post('/logout', requireAuth, (req, res) => {
   });
 });
 
+/**
+ * POST /api/auth/change-password
+ * Change your own password (must supply current password)
+ */
+router.post('/change-password', requireAuth, async (req, res) => {
+  try {
+    const { currentPassword, newPassword } = req.body;
+
+    if (!currentPassword || !newPassword) {
+      return res.status(400).json({
+        error: 'Validation error',
+        message: 'Current password and new password are required'
+      });
+    }
+
+    if (newPassword.length < 8) {
+      return res.status(400).json({
+        error: 'Validation error',
+        message: 'New password must be at least 8 characters'
+      });
+    }
+
+    const changed = await authService.changePassword(req.admin.id, currentPassword, newPassword);
+
+    if (!changed) {
+      return res.status(401).json({
+        error: 'Authentication failed',
+        message: 'Current password is incorrect'
+      });
+    }
+
+    console.log(`🔑 Admin ${req.admin.email} changed their password`);
+
+    res.json({ message: 'Password changed successfully' });
+
+  } catch (error) {
+    console.error('💥 Change password error:', error);
+    res.status(500).json({
+      error: 'Server error',
+      message: 'Failed to change password'
+    });
+  }
+});
+
 module.exports = router;
 
 

@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import React, { createContext, useContext, useState, useEffect, useRef, ReactNode } from 'react';
 import axios from 'axios';
 
 // Types
@@ -40,16 +40,30 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [token, setToken] = useState<string | null>(localStorage.getItem('adminToken'));
   const [isLoading, setIsLoading] = useState(true);
 
-  // Setup axios interceptor for auth token
+  // Keep a ref in sync with the latest token so the interceptor below (which
+  // is only ever registered ONCE) always reads the current value instead of
+  // a stale one captured in its closure.
+  const tokenRef = useRef<string | null>(token);
   useEffect(() => {
-    api.interceptors.request.use((config) => {
-      if (token) {
-        config.headers.Authorization = `Bearer ${token}`;
+    tokenRef.current = token;
+  }, [token]);
+
+  // Setup axios interceptors exactly once. Previously this ran on every
+  // `token` change and registered a NEW interceptor each time without ever
+  // ejecting the old one, so they piled up across login/logout cycles.
+  // Axios runs request interceptors in *reverse* (LIFO) order, so an older,
+  // stale interceptor could end up running last and "winning" - attaching an
+  // old token to requests after logging in as a different admin. Registering
+  // once and reading from a ref avoids both the pile-up and that ordering bug.
+  useEffect(() => {
+    const requestInterceptorId = api.interceptors.request.use((config) => {
+      if (tokenRef.current) {
+        config.headers.Authorization = `Bearer ${tokenRef.current}`;
       }
       return config;
     });
 
-    api.interceptors.response.use(
+    const responseInterceptorId = api.interceptors.response.use(
       (response) => response,
       (error) => {
         if (error.response?.status === 401) {
@@ -59,7 +73,12 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         return Promise.reject(error);
       }
     );
-  }, [token]);
+
+    return () => {
+      api.interceptors.request.eject(requestInterceptorId);
+      api.interceptors.response.eject(responseInterceptorId);
+    };
+  }, []);
 
   // Verify token on app start
   useEffect(() => {

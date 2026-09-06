@@ -120,12 +120,6 @@ const AdminLogin: React.FC = () => {
               )}
             </button>
           </form>
-
-          <div className="mt-6 text-center">
-            <p className="text-xs text-gray-500">
-              Default credentials: anthony@familynest.com / admin123
-            </p>
-          </div>
         </div>
 
         <div className="text-center">

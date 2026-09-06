@@ -135,56 +135,6 @@ router.put('/:key', requireSuperAdmin, async (req, res) => {
 });
 
 /**
- * PUT /api/settings/subscription-price
- * Update subscription price (shortcut endpoint)
- */
-router.put('/subscription-price', requireSuperAdmin, async (req, res) => {
-  try {
-    const { price } = req.body;
-    
-    if (!price || price <= 0) {
-      return res.status(400).json({
-        error: 'Validation error',
-        message: 'Valid price is required'
-      });
-    }
-    
-    const sql = `
-      UPDATE system_settings 
-      SET setting_value = $1,
-          updated_at = NOW(),
-          updated_by = $2
-      WHERE setting_key = 'subscription.monthly.price'
-      RETURNING id, setting_key, setting_value, updated_at
-    `;
-    
-    const result = await db.query(sql, [price.toString(), req.admin.id]);
-    
-    if (result.rows.length === 0) {
-      return res.status(404).json({
-        error: 'Setting not found',
-        message: 'Subscription price setting not found'
-      });
-    }
-    
-    console.log(`💰 Admin ${req.admin.email} updated subscription price to $${price}`);
-    
-    res.json({
-      message: 'Subscription price updated successfully',
-      newPrice: parseFloat(price),
-      setting: result.rows[0]
-    });
-    
-  } catch (error) {
-    console.error('💥 Update subscription price error:', error);
-    res.status(500).json({
-      error: 'Update failed',
-      message: 'Failed to update subscription price'
-    });
-  }
-});
-
-/**
  * POST /api/settings
  * Create new system setting (requires SUPER_ADMIN)
  */

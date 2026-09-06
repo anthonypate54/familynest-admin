@@ -119,6 +119,79 @@ const getAdminById = async (adminId) => {
 };
 
 /**
+ * Change an admin's own password
+ * @param {number} adminId - Admin ID
+ * @param {string} currentPassword - Current password (must match)
+ * @param {string} newPassword - New password to set
+ * @returns {Promise<boolean>} true if changed, false if current password was wrong
+ */
+const changePassword = async (adminId, currentPassword, newPassword) => {
+  const result = await db.query(
+    'SELECT password_hash FROM admin_users WHERE id = $1 AND is_active = true',
+    [adminId]
+  );
+
+  if (result.rows.length === 0) {
+    return false;
+  }
+
+  const isValid = await bcrypt.compare(currentPassword, result.rows[0].password_hash);
+  if (!isValid) {
+    return false;
+  }
+
+  const newHash = await bcrypt.hash(newPassword, 12);
+  await db.query(
+    'UPDATE admin_users SET password_hash = $1, updated_at = NOW() WHERE id = $2',
+    [newHash, adminId]
+  );
+
+  return true;
+};
+
+/**
+ * List all admin users (for admin management screen)
+ * @returns {Promise<Array>} Admin users, excluding password hashes
+ */
+const listAdmins = async () => {
+  const result = await db.query(`
+    SELECT id, username, email, role, is_active, created_at, last_login
+    FROM admin_users
+    ORDER BY created_at ASC
+  `);
+  return result.rows;
+};
+
+/**
+ * Deactivate an admin user (soft delete - login will be rejected but the
+ * row and its history/audit trail are preserved)
+ * @param {number} adminId - Admin ID to deactivate
+ * @returns {Promise<Object|null>} Updated admin row or null if not found
+ */
+const deactivateAdmin = async (adminId) => {
+  const result = await db.query(
+    `UPDATE admin_users SET is_active = false, updated_at = NOW()
+     WHERE id = $1 RETURNING id, username, email, role, is_active`,
+    [adminId]
+  );
+  return result.rows[0] || null;
+};
+
+/**
+ * Reactivate a previously deactivated admin user
+ * @param {number} adminId - Admin ID to reactivate
+ * @returns {Promise<Object|null>} Updated admin row or null if not found
+ */
+const reactivateAdmin = async (adminId) => {
+  const result = await db.query(
+    `UPDATE admin_users SET is_active = true, updated_at = NOW()
+     WHERE id = $1 RETURNING id, username, email, role, is_active`,
+    [adminId]
+  );
+  return result.rows[0] || null;
+};
+
+/**
  * Initialize default admin user if none exists
  */
 const initializeDefaultAdmin = async () => {
@@ -155,6 +228,10 @@ module.exports = {
   generateToken,
   verifyToken,
   getAdminById,
+  changePassword,
+  listAdmins,
+  deactivateAdmin,
+  reactivateAdmin,
   initializeDefaultAdmin
 };
 
