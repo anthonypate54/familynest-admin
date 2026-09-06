@@ -1,138 +1,50 @@
 const express = require('express');
 const cors = require('cors');
+const helmet = require('helmet');
+const morgan = require('morgan');
 require('dotenv').config();
 
-const app = express();
-const PORT = process.env.ADMIN_API_PORT || 3001;
+const config = require('./config');
+const db = require('./services/database');
+const authService = require('./services/auth');
 
-// Middleware
-app.use(cors());
+const authRoutes = require('./routes/auth');
+const userRoutes = require('./routes/users');
+const settingsRoutes = require('./routes/settings');
+const notificationRoutes = require('./routes/notifications');
+const adminsRoutes = require('./routes/admins');
+const marketingRoutes = require('./routes/marketing');
+
+const app = express();
+const PORT = config.server.port;
+
+// Security & logging middleware
+app.use(helmet());
+app.use(cors(config.server.cors));
+app.use(morgan('combined'));
 app.use(express.json());
 
-// Health check
+// Health check (no auth required)
 app.get('/health', (req, res) => {
-  res.json({ 
-    status: 'healthy', 
+  res.json({
+    status: 'healthy',
     service: 'FamilyNest Admin API',
     timestamp: new Date().toISOString()
   });
 });
 
-// Basic auth endpoint for testing
-app.post('/api/auth/login', (req, res) => {
-  const { email, password } = req.body;
-  
-  // Simple mock authentication
-  if (email === 'anthony@familynest.com' && password === 'admin123') {
-    res.json({
-      message: 'Login successful',
-      token: 'mock-jwt-token-' + Date.now(),
-      admin: {
-        id: 1,
-        username: 'anthony',
-        email: 'anthony@familynest.com',
-        role: 'SUPER_ADMIN',
-        lastLogin: new Date()
-      }
-    });
-  } else {
-    res.status(401).json({
-      error: 'Authentication failed',
-      message: 'Invalid email or password'
-    });
-  }
-});
-
-// Auth verification endpoint
-app.get('/api/auth/me', (req, res) => {
-  const authHeader = req.headers.authorization;
-  
-  if (!authHeader || !authHeader.startsWith('Bearer ')) {
-    return res.status(401).json({
-      error: 'Authentication required',
-      message: 'Authorization header missing or invalid'
-    });
-  }
-  
-  const token = authHeader.substring(7);
-  
-  // Simple token validation (in real app, verify JWT)
-  if (token.startsWith('mock-jwt-token-')) {
-    res.json({
-      admin: {
-        id: 1,
-        username: 'anthony',
-        email: 'anthony@familynest.com',
-        role: 'SUPER_ADMIN',
-        lastLogin: new Date()
-      }
-    });
-  } else {
-    res.status(401).json({
-      error: 'Invalid token',
-      message: 'Token verification failed'
-    });
-  }
-});
-
-// Mock user stats endpoint
-app.get('/api/users/stats', (req, res) => {
-  res.json({
-    stats: {
-      total_users: 42,
-      trial_users: 12,
-      active_users: 25,
-      expired_users: 3,
-      cancelled_users: 2,
-      new_users_7d: 8,
-      new_users_30d: 35,
-      monthly_revenue: 74.75
-    }
-  });
-});
-
-// Mock users search endpoint
-app.get('/api/users/search', (req, res) => {
-  res.json({
-    users: [
-      {
-        id: 1,
-        email: 'claude@test.com',
-        first_name: 'Claude',
-        last_name: 'User',
-        subscription_status: 'trial',
-        trial_end_date: '2025-09-20T00:00:00.000Z',
-        subscription_end_date: null,
-        platform: null,
-        monthly_price: 2.99,
-        created_at: '2025-09-15T00:00:00.000Z'
-      },
-      {
-        id: 2,
-        email: 'bucky@test.com',
-        first_name: 'Bucky',
-        last_name: 'User',
-        subscription_status: 'active',
-        trial_end_date: null,
-        subscription_end_date: '2025-10-15T00:00:00.000Z',
-        platform: 'google',
-        monthly_price: 2.99,
-        created_at: '2025-08-15T00:00:00.000Z'
-      }
-    ],
-    pagination: {
-      page: 0,
-      size: 20,
-      total: 2,
-      totalPages: 1
-    }
-  });
-});
+// Real, database-backed routes (JWT-protected where appropriate, see middleware/auth.js)
+app.use('/api/auth', authRoutes);
+app.use('/api/users', userRoutes);
+app.use('/api/settings', settingsRoutes);
+app.use('/api/notifications', notificationRoutes);
+app.use('/api/admins', adminsRoutes);
+app.use('/api/marketing', marketingRoutes);
 
 // Error handling
 app.use((err, req, res, next) => {
-  console.error('Error:', err);
-  res.status(500).json({ 
+  console.error('💥 Unhandled error:', err);
+  res.status(500).json({
     error: 'Internal server error',
     message: err.message
   });
@@ -143,11 +55,16 @@ app.use('*', (req, res) => {
   res.status(404).json({ error: 'Endpoint not found' });
 });
 
-app.listen(PORT, () => {
+app.listen(PORT, async () => {
   console.log(`🚀 FamilyNest Admin API running on port ${PORT}`);
   console.log(`📊 Health check: http://localhost:${PORT}/health`);
-  console.log(`🔐 Test login: anthony@familynest.com / admin123`);
-  console.log('✅ Mock Admin API ready for testing');
+
+  const connected = await db.testConnection();
+  if (connected) {
+    await authService.initializeDefaultAdmin();
+  } else {
+    console.warn('⚠️  Database connection failed at startup - admin auth will not work until the DB is reachable. Check backend/.env');
+  }
 });
 
 module.exports = app;
