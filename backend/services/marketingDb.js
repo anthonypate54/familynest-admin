@@ -163,9 +163,27 @@ const SCHEMA_CACHE_TTL_MS = 10 * 60 * 1000; // 10 min - long enough to avoid
 // re-querying on every keystroke-driven generation, short enough that a
 // migration run during the day doesn't require restarting the admin server.
 
+// Tables the LLM should never even be told about - these hold credential
+// or session material with zero legitimate use in a marketing segment
+// query (see scripts/marketing/07_restrict_sensitive_access.sql, which
+// revokes marketing_tool's actual DB access to these too - this list is
+// belt-and-suspenders so the model doesn't waste a turn hallucinating a
+// query against them in the first place).
+const HIDDEN_TABLES = ['admin_users', 'refresh_tokens', 'flyway_schema_history'];
+
+// Columns to hide from specific tables that are otherwise legitimately
+// needed for segment queries (app_user, invitation, payment_transactions
+// all need to stay visible - just not these specific columns).
+const HIDDEN_COLUMNS = {
+  app_user: ['password', 'password_reset_token', 'current_session_id'],
+  invitation: ['token'],
+  payment_transactions: ['linked_purchase_token', 'receipt_data']
+};
+
 /**
  * Get a compact "table_name: col type, col type, ..." block for every
- * table visible to the marketing_tool role, cached briefly.
+ * table visible to the marketing_tool role, cached briefly. Deliberately
+ * excludes HIDDEN_TABLES/HIDDEN_COLUMNS - see the comments above.
  * @returns {Promise<string>}
  */
 const getSchemaContext = async () => {
@@ -179,11 +197,20 @@ const getSchemaContext = async () => {
            string_agg(column_name || ' ' || data_type, ', ' ORDER BY ordinal_position) AS cols
     FROM information_schema.columns
     WHERE table_schema = 'public'
+      AND table_name != ALL ($1)
     GROUP BY table_name
     ORDER BY table_name
-  `);
+  `, [HIDDEN_TABLES]);
 
-  schemaCache = result.rows.map(r => `${r.table_name}: ${r.cols}`).join('\n');
+  schemaCache = result.rows
+    .map(r => {
+      const hidden = HIDDEN_COLUMNS[r.table_name];
+      const cols = hidden
+        ? r.cols.split(', ').filter(c => !hidden.includes(c.split(' ')[0])).join(', ')
+        : r.cols;
+      return `${r.table_name}: ${cols}`;
+    })
+    .join('\n');
   schemaCacheAt = now;
   return schemaCache;
 };
