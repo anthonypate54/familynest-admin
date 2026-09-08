@@ -158,6 +158,12 @@ router.get('/search', async (req, res) => {
  */
 router.get('/stats', async (req, res) => {
   try {
+    // monthly_revenue used to sum app_user.monthly_price, which is never
+    // populated by real purchases (always 0 - same gotcha as the NL-to-SQL
+    // tool's schema notes). Real pricing only lives in payment_transactions,
+    // so derive it the same way the GET / user list endpoint above does:
+    // each active user's most recent actual charge ('renewal', not a test)
+    // stands in for their current monthly price, summed across active users.
     const sql = `
       SELECT 
         COUNT(*) as total_users,
@@ -167,8 +173,14 @@ router.get('/stats', async (req, res) => {
         COUNT(CASE WHEN subscription_status = 'cancelled' THEN 1 END) as cancelled_users,
         COUNT(CASE WHEN created_at >= CURRENT_DATE - INTERVAL '7 days' THEN 1 END) as new_users_7d,
         COUNT(CASE WHEN created_at >= CURRENT_DATE - INTERVAL '30 days' THEN 1 END) as new_users_30d,
-        COALESCE(SUM(CASE WHEN subscription_status = 'active' THEN monthly_price END), 0) as monthly_revenue
-      FROM app_user
+        COALESCE(SUM(CASE WHEN u.subscription_status = 'active' THEN latest_pt.current_monthly_price END), 0) as monthly_revenue
+      FROM app_user u
+      LEFT JOIN (
+        SELECT DISTINCT ON (user_id) user_id, amount AS current_monthly_price
+        FROM payment_transactions
+        WHERE status = 'renewal' AND is_test = false
+        ORDER BY user_id, transaction_date DESC
+      ) latest_pt ON latest_pt.user_id = u.id
     `;
     
     const result = await db.query(sql);

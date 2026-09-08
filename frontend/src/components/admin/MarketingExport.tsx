@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { api } from '../../contexts/AuthContext';
-import { Megaphone, Play, List, Mail, CheckCircle, XCircle, Trash2 } from 'lucide-react';
+import { Megaphone, Play, List, Mail, CheckCircle, XCircle, Trash2, Sparkles, Download } from 'lucide-react';
 
 interface Segment {
   id: number;
@@ -45,6 +45,15 @@ const MarketingExport: React.FC = () => {
   const [running, setRunning] = useState(false);
   const [result, setResult] = useState<PreviewResult | null>(null);
   const [error, setError] = useState<string | null>(null);
+
+  // "Describe your segment in English" -> SQL generation via Claude.
+  // conversation holds the running back-and-forth so a follow-up message
+  // ("also exclude X") refines the previous query instead of starting
+  // over - cleared by "Start Over" or whenever a saved segment is picked.
+  const [nlDescription, setNlDescription] = useState('');
+  const [generatingSql, setGeneratingSql] = useState(false);
+  const [generateSqlError, setGenerateSqlError] = useState<string | null>(null);
+  const [conversation, setConversation] = useState<Array<{ role: 'user' | 'assistant'; content: string }>>([]);
 
   // Row selection in the preview table, so an admin can exclude specific
   // rows (e.g. a known test account) from a batch before syncing - this
@@ -116,6 +125,45 @@ const MarketingExport: React.FC = () => {
     if (segment) {
       setSqlText(segment.sql_text);
     }
+    // Picking a saved segment is an unrelated fresh context - drop any
+    // in-progress AI conversation so a later refinement doesn't get
+    // confused about which query it's supposedly building on.
+    setConversation([]);
+    setNlDescription('');
+  };
+
+  const handleGenerateSql = async () => {
+    setGenerateSqlError(null);
+
+    if (!nlDescription.trim()) {
+      setGenerateSqlError('Describe what you want first');
+      return;
+    }
+
+    try {
+      setGeneratingSql(true);
+      const response = await api.post('/marketing/generate-sql', {
+        description: nlDescription.trim(),
+        history: conversation
+      });
+      setSqlText(response.data.sql);
+      setConversation(response.data.history);
+      setNlDescription(''); // clear so the next thing typed is the next refinement
+      // This is now an ad-hoc AI-generated query, not tied to any saved
+      // segment - clear the selection so a later sync doesn't get logged
+      // under a segment name that no longer matches what's in the editor.
+      setSelectedSegment('');
+    } catch (err: any) {
+      setGenerateSqlError(err?.response?.data?.message || 'Failed to generate SQL');
+    } finally {
+      setGeneratingSql(false);
+    }
+  };
+
+  const handleStartOverConversation = () => {
+    setConversation([]);
+    setNlDescription('');
+    setGenerateSqlError(null);
   };
 
   const handleRunPreview = async () => {
@@ -209,6 +257,44 @@ const MarketingExport: React.FC = () => {
   };
 
   const columns = result && result.rows.length > 0 ? Object.keys(result.rows[0]) : [];
+
+  // Quote a CSV field only when it actually needs it (contains a comma,
+  // quote, or newline), doubling any internal quotes - standard CSV
+  // escaping (RFC 4180). null/undefined become an empty cell, not the
+  // literal string "null" (which the on-screen table intentionally shows
+  // instead, for clarity there).
+  const toCsvValue = (value: any): string => {
+    if (value === null || value === undefined) return '';
+    const str = String(value);
+    if (/[",\n]/.test(str)) {
+      return `"${str.replace(/"/g, '""')}"`;
+    }
+    return str;
+  };
+
+  const handleDownloadCsv = () => {
+    if (!result || result.rows.length === 0) return;
+
+    const lines = [
+      columns.join(','),
+      ...result.rows.map(row => columns.map(col => toCsvValue(row[col])).join(','))
+    ];
+    // Leading BOM so Excel (Windows in particular) reliably detects UTF-8
+    // instead of guessing a legacy codepage and mangling names with
+    // accents/emoji.
+    const blob = new Blob(['\uFEFF' + lines.join('\r\n')], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+
+    const stamp = new Date().toISOString().slice(0, 19).replace(/[:T]/g, '-');
+    const namePart = selectedSegment || 'ad-hoc';
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `marketing-${namePart}-${stamp}.csv`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  };
 
   return (
     <div className="p-6 space-y-6 bg-gray-50 min-h-full">
@@ -307,6 +393,62 @@ const MarketingExport: React.FC = () => {
         <div className="bg-white shadow rounded-lg p-6 lg:col-span-2">
           <h3 className="text-lg font-medium text-gray-900 mb-4">Query</h3>
 
+          <div className="mb-4 p-4 bg-purple-50 border border-purple-200 rounded-md">
+            <div className="flex items-center justify-between mb-2">
+              <label className="flex items-center gap-1.5 text-sm font-medium text-purple-900">
+                <Sparkles className="h-4 w-4" />
+                Describe your segment in English
+              </label>
+              {conversation.length > 0 && (
+                <button
+                  onClick={handleStartOverConversation}
+                  className="text-xs text-purple-700 hover:text-purple-900 underline"
+                >
+                  Start Over
+                </button>
+              )}
+            </div>
+
+            {conversation.filter(m => m.role === 'user').length > 0 && (
+              <div className="mb-2 space-y-1">
+                {conversation.filter(m => m.role === 'user').map((m, i) => (
+                  <div key={i} className="text-xs text-purple-800 bg-purple-100 rounded px-2 py-1">
+                    {i + 1}. {m.content}
+                  </div>
+                ))}
+              </div>
+            )}
+
+            <div className="flex items-center gap-2">
+              <input
+                type="text"
+                value={nlDescription}
+                onChange={(e) => setNlDescription(e.target.value)}
+                onKeyDown={(e) => { if (e.key === 'Enter') handleGenerateSql(); }}
+                placeholder={conversation.length > 0 ? 'e.g. also exclude anyone on the free trial' : 'e.g. Everyone who paid more than $50 total, highest spenders first'}
+                className="block w-full px-3 py-2 border border-purple-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
+              />
+              <button
+                onClick={handleGenerateSql}
+                disabled={generatingSql}
+                className="flex items-center gap-1.5 whitespace-nowrap bg-purple-600 text-white px-4 py-2 rounded-md hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-purple-500 disabled:opacity-50"
+              >
+                <Sparkles className="h-4 w-4" />
+                {generatingSql ? 'Generating...' : conversation.length > 0 ? 'Refine SQL' : 'Generate SQL'}
+              </button>
+            </div>
+            <p className="mt-2 text-xs text-purple-700">
+              {conversation.length > 0
+                ? 'This will refine the query above based on what you type - click "Start Over" for an unrelated request instead.'
+                : 'Fills in the query below - still read-only/validated the same way, and nothing runs until you click Run Preview.'}
+            </p>
+            {generateSqlError && (
+              <div className="mt-2 px-3 py-2 rounded text-sm bg-red-50 border border-red-200 text-red-700">
+                {generateSqlError}
+              </div>
+            )}
+          </div>
+
           <textarea
             value={sqlText}
             onChange={(e) => setSqlText(e.target.value)}
@@ -343,14 +485,23 @@ const MarketingExport: React.FC = () => {
                   {result.truncated ? ' (truncated to preview limit)' : ''}
                 </p>
                 {result.rows.length > 0 && (
-                  <button
-                    onClick={handleRemoveSelected}
-                    disabled={selectedRows.size === 0}
-                    className="flex items-center gap-1.5 text-sm text-red-600 hover:text-red-800 disabled:text-gray-400 disabled:cursor-not-allowed"
-                  >
-                    <Trash2 className="h-4 w-4" />
-                    Remove Selected{selectedRows.size > 0 ? ` (${selectedRows.size})` : ''}
-                  </button>
+                  <div className="flex items-center gap-4">
+                    <button
+                      onClick={handleDownloadCsv}
+                      className="flex items-center gap-1.5 text-sm text-indigo-600 hover:text-indigo-800"
+                    >
+                      <Download className="h-4 w-4" />
+                      Download CSV
+                    </button>
+                    <button
+                      onClick={handleRemoveSelected}
+                      disabled={selectedRows.size === 0}
+                      className="flex items-center gap-1.5 text-sm text-red-600 hover:text-red-800 disabled:text-gray-400 disabled:cursor-not-allowed"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                      Remove Selected{selectedRows.size > 0 ? ` (${selectedRows.size})` : ''}
+                    </button>
+                  </div>
                 )}
               </div>
               {result.rows.length === 0 ? (

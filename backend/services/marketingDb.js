@@ -147,6 +147,47 @@ const saveSegment = async ({ name, description, sqlText, createdBy }) => {
   return result.rows[0];
 };
 
+// --- Live schema introspection (for NL-to-SQL prompt context) -----------
+//
+// Feeds services/nlToSql.js the REAL, current column list for every table
+// - pulled from information_schema, i.e. the actual end result of every
+// Flyway migration already applied - instead of hand-typed table
+// descriptions that drift out of date, or the raw migration files
+// themselves (which are 60+ incremental diffs the model would have to
+// mentally replay to figure out today's schema). Runs under the same
+// restricted marketing_tool role as everything else here - it can only see
+// columns of tables it's actually been granted SELECT on.
+let schemaCache = null;
+let schemaCacheAt = 0;
+const SCHEMA_CACHE_TTL_MS = 10 * 60 * 1000; // 10 min - long enough to avoid
+// re-querying on every keystroke-driven generation, short enough that a
+// migration run during the day doesn't require restarting the admin server.
+
+/**
+ * Get a compact "table_name: col type, col type, ..." block for every
+ * table visible to the marketing_tool role, cached briefly.
+ * @returns {Promise<string>}
+ */
+const getSchemaContext = async () => {
+  const now = Date.now();
+  if (schemaCache && now - schemaCacheAt < SCHEMA_CACHE_TTL_MS) {
+    return schemaCache;
+  }
+
+  const result = await marketingPool.query(`
+    SELECT table_name,
+           string_agg(column_name || ' ' || data_type, ', ' ORDER BY ordinal_position) AS cols
+    FROM information_schema.columns
+    WHERE table_schema = 'public'
+    GROUP BY table_name
+    ORDER BY table_name
+  `);
+
+  schemaCache = result.rows.map(r => `${r.table_name}: ${r.cols}`).join('\n');
+  schemaCacheAt = now;
+  return schemaCache;
+};
+
 // --- Campaign export log (append-only) -----------------------------------
 
 /**
@@ -187,5 +228,6 @@ module.exports = {
   getSegmentByName,
   saveSegment,
   logExports,
+  getSchemaContext,
   marketingPool
 };

@@ -15,6 +15,7 @@ frontend/build/
 
 # OS / editor cruft
 .DS_Store
+*.backup
 
 # Logs
 npm-debug.log*

@@ -1,6 +1,7 @@
 const express = require('express');
 const marketingDb = require('../services/marketingDb');
 const mailchimp = require('../services/mailchimp');
+const nlToSql = require('../services/nlToSql');
 const { requireAuth } = require('../middleware/auth');
 
 const router = express.Router();
@@ -59,6 +60,72 @@ router.get('/segments', async (req, res) => {
     res.status(500).json({
       error: 'Failed to list segments',
       message: 'Failed to retrieve segment definitions'
+    });
+  }
+});
+
+/**
+ * POST /api/marketing/generate-sql
+ * Translate a plain-English description of a segment into SQL via
+ * Claude, then re-validate the result through the exact same
+ * assertSafeSelect() check every other query goes through - the model's
+ * output is never trusted on its own. Does NOT run the query - the
+ * frontend still has to click Run Preview, same as a hand-typed query.
+ *
+ * Supports multi-turn refinement: pass back the `history` array this
+ * route returned from a prior call, and the new `description` is treated
+ * as a refinement of the previous query ("also exclude X") rather than an
+ * unrelated request. Omit/clear history to start a fresh conversation.
+ *
+ * Body: { description: string, history?: Array<{role, content}> }
+ */
+router.post('/generate-sql', async (req, res) => {
+  try {
+    const { description, history } = req.body;
+
+    if (!description || typeof description !== 'string' || !description.trim()) {
+      return res.status(400).json({
+        error: 'Validation error',
+        message: 'description is required'
+      });
+    }
+
+    if (!nlToSql.isConfigured()) {
+      return res.status(503).json({
+        error: 'Not configured',
+        message: 'ANTHROPIC_API_KEY is not set on the server'
+      });
+    }
+
+    const priorHistory = Array.isArray(history) ? history : [];
+    const { rawSql, messages } = await nlToSql.generateSql(description, priorHistory);
+
+    let safeSql;
+    try {
+      safeSql = marketingDb.assertSafeSelect(rawSql);
+    } catch (validationError) {
+      console.error('💥 Generated SQL failed validation:', rawSql);
+      return res.status(422).json({
+        error: 'Generated SQL failed validation',
+        message: `The AI generated an invalid query: ${validationError.message}`,
+        generatedSql: rawSql
+      });
+    }
+
+    // Store the validated SQL (not the raw/un-stripped model output) as
+    // the assistant's turn, so a future refinement call sees exactly what
+    // will actually run, not e.g. leftover markdown fences.
+    const updatedHistory = [...messages, { role: 'assistant', content: safeSql }];
+
+    console.log(`🤖 Admin ${req.admin.email} generated SQL from English (turn ${updatedHistory.length / 2}): "${description}"`);
+
+    res.json({ sql: safeSql, history: updatedHistory });
+
+  } catch (error) {
+    console.error('💥 Generate SQL error:', error?.response?.data || error.message);
+    res.status(502).json({
+      error: 'Generation failed',
+      message: error?.response?.data?.error?.message || error.message
     });
   }
 });
