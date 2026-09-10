@@ -57,5 +57,11 @@ module.exports = {
   // External APIs (if needed)
   mainApi: {
     url: process.env.MAIN_API_URL || 'http://localhost:8080/api',
+    // Shared secret for the Spring backend's /api/admin/** routes (see
+    // AdminAuthFilter.java) - required to call
+    // AdminSubscriptionVerificationController's read-only platform-check
+    // endpoint. Must match `app.admin.api-key` on the Spring backend for
+    // whichever environment this admin console is talking to.
+    adminApiKey: process.env.MAIN_API_ADMIN_KEY || '',
   },
 };

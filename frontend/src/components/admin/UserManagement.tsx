@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { api } from '../../contexts/AuthContext';
-import { Search, Filter, Calendar, ChevronUp, ChevronDown, ChevronsUpDown } from 'lucide-react';
+import { Search, Filter, Calendar, ChevronUp, ChevronDown, ChevronsUpDown, ShieldCheck, X } from 'lucide-react';
 
 interface User {
   id: number;
@@ -16,6 +16,61 @@ interface User {
   created_at: string;
 }
 
+// --- Helpers for rendering the "Verify with platform" result cleanly, instead
+// of dumping raw JSON. Shared by the "our record" grid and the platform
+// summary grid below, since both are just flat key/value objects.
+
+/** "subscription_end_date" / "expiresDate" -> "Subscription End Date" / "Expires Date" */
+const formatFieldLabel = (key: string): string =>
+  key
+    .replace(/_/g, ' ')
+    .replace(/([a-z])([A-Z])/g, '$1 $2')
+    .replace(/\b\w/g, (c) => c.toUpperCase());
+
+/** Dates come back as either epoch-millis numbers (Apple/our DB) or ISO strings (Google) - handle both. */
+const formatFieldValue = (key: string, value: unknown): string => {
+  if (value === null || value === undefined || value === '') return '\u2014';
+  if (typeof value === 'boolean') return value ? 'Yes' : 'No';
+  if (/date|time/i.test(key)) {
+    const d = new Date(value as string | number);
+    if (!isNaN(d.getTime())) return d.toLocaleString();
+  }
+  if (typeof value === 'object') return JSON.stringify(value);
+  return String(value);
+};
+
+const STATUS_KEYS = new Set(['status', 'subscription_status']);
+
+const statusPillClass = (value: string): string => {
+  const v = value.toLowerCase();
+  if (v.includes('active')) return 'bg-green-100 text-green-800';
+  if (v.includes('expired') || v.includes('revoked') || v.includes('not found')) return 'bg-red-100 text-red-800';
+  if (v.includes('cancel')) return 'bg-gray-100 text-gray-800';
+  return 'bg-yellow-100 text-yellow-800';
+};
+
+/** Renders a flat object as a clean two-column label/value grid, with status-like fields shown as colored pills. */
+const KeyValueGrid: React.FC<{ data: Record<string, unknown>; skipKeys?: string[] }> = ({ data, skipKeys = [] }) => (
+  <div className="grid grid-cols-2 gap-x-4 gap-y-2 text-sm">
+    {Object.entries(data)
+      .filter(([k]) => !skipKeys.includes(k))
+      .map(([k, v]) => (
+        <React.Fragment key={k}>
+          <div className="text-gray-500">{formatFieldLabel(k)}</div>
+          <div className="text-gray-900 font-medium break-all">
+            {STATUS_KEYS.has(k) && v ? (
+              <span className={`px-2 py-0.5 rounded-full text-xs font-semibold ${statusPillClass(String(v))}`}>
+                {String(v)}
+              </span>
+            ) : (
+              formatFieldValue(k, v)
+            )}
+          </div>
+        </React.Fragment>
+      ))}
+  </div>
+);
+
 const UserManagement: React.FC = () => {
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
@@ -25,6 +80,12 @@ const UserManagement: React.FC = () => {
   const [totalPages, setTotalPages] = useState(0);
   const [sortBy, setSortBy] = useState('created_at');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
+
+  // "Verify with platform" modal state - read-only check of what Apple/Google's
+  // own servers currently say about a user's subscription, vs our DB.
+  const [verifyLoading, setVerifyLoading] = useState(false);
+  const [verifyError, setVerifyError] = useState<string | null>(null);
+  const [verifyResult, setVerifyResult] = useState<any | null>(null);
 
   // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
@@ -104,6 +165,27 @@ const UserManagement: React.FC = () => {
   const formatDate = (dateString: string | null) => {
     if (!dateString) return 'N/A';
     return new Date(dateString).toLocaleDateString();
+  };
+
+  const handleVerifyPlatform = async (userId: number) => {
+    setVerifyResult(null);
+    setVerifyError(null);
+    setVerifyLoading(true);
+    try {
+      const response = await api.get(`/users/${userId}/verify-with-platform`);
+      setVerifyResult(response.data);
+    } catch (error: any) {
+      console.error('Failed to verify with platform:', error);
+      setVerifyError(error.response?.data?.message || 'Failed to verify with platform');
+    } finally {
+      setVerifyLoading(false);
+    }
+  };
+
+  const closeVerifyModal = () => {
+    setVerifyResult(null);
+    setVerifyError(null);
+    setVerifyLoading(false);
   };
 
   const handleExtendTrial = async (userId: number, days: number) => {
@@ -242,13 +324,23 @@ const UserManagement: React.FC = () => {
                       {user.total_paid !== null ? `$${user.total_paid.toFixed(2)}` : 'N/A'}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium space-x-2">
+                      {(user.subscription_status === 'trial' || user.subscription_status === 'platform_trial') && (
+                        <button
+                          onClick={() => handleExtendTrial(user.id, 7)}
+                          className="text-indigo-600 hover:text-indigo-900 flex items-center"
+                          title="Extend trial by 7 days"
+                        >
+                          <Calendar className="h-4 w-4 mr-1" />
+                          +7d
+                        </button>
+                      )}
                       <button
-                        onClick={() => handleExtendTrial(user.id, 7)}
-                        className="text-indigo-600 hover:text-indigo-900 flex items-center"
-                        title="Extend trial by 7 days"
+                        onClick={() => handleVerifyPlatform(user.id)}
+                        className="text-emerald-600 hover:text-emerald-900 flex items-center"
+                        title="Verify subscription status directly with Apple/Google"
                       >
-                        <Calendar className="h-4 w-4 mr-1" />
-                        +7d
+                        <ShieldCheck className="h-4 w-4 mr-1" />
+                        Verify
                       </button>
                     </td>
                   </tr>
@@ -305,6 +397,89 @@ const UserManagement: React.FC = () => {
           </div>
         )}
       </div>
+
+      {/* "Verify with platform" modal */}
+      {(verifyLoading || verifyError || verifyResult) && (
+        <div className="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-[80vh] overflow-y-auto">
+            <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200">
+              <h3 className="text-lg font-medium text-gray-900 flex items-center">
+                <ShieldCheck className="h-5 w-5 mr-2 text-emerald-600" />
+                Platform Verification
+              </h3>
+              <button onClick={closeVerifyModal} className="text-gray-400 hover:text-gray-600">
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+            <div className="p-6">
+              {verifyLoading && (
+                <div className="text-center py-8">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600 mx-auto"></div>
+                  <p className="mt-3 text-sm text-gray-500">Checking with Apple/Google...</p>
+                </div>
+              )}
+              {verifyError && (
+                <div className="bg-red-50 border border-red-200 text-red-700 text-sm rounded-md p-4">
+                  {verifyError}
+                </div>
+              )}
+              {verifyResult && !verifyLoading && (
+                <div className="space-y-5">
+                  <div>
+                    <h4 className="text-sm font-semibold text-gray-700 mb-2">Our record</h4>
+                    <div className="bg-gray-50 border border-gray-200 rounded-md p-4">
+                      <KeyValueGrid data={verifyResult.our_record} skipKeys={['id']} />
+                    </div>
+                    <p className="text-xs text-gray-500 mt-1.5">
+                      payment_transactions rows on file:{' '}
+                      <span className="font-medium text-gray-700">{verifyResult.our_payment_transactions_count}</span>
+                    </p>
+                  </div>
+
+                  {verifyResult.platform_check && (
+                    <div className="text-sm text-gray-600 italic">{verifyResult.platform_check}</div>
+                  )}
+
+                  {verifyResult.platform_check_error && (
+                    <div className="bg-amber-50 border border-amber-200 text-amber-800 text-sm rounded-md p-4">
+                      {verifyResult.platform_check_error}
+                    </div>
+                  )}
+
+                  {verifyResult.platform_response && (
+                    <div>
+                      <h4 className="text-sm font-semibold text-gray-700 mb-2">
+                        Live check &mdash; {verifyResult.platform_response.source}
+                      </h4>
+                      {verifyResult.platform_response.summary ? (
+                        <div className="bg-emerald-50 border border-emerald-200 rounded-md p-4">
+                          <KeyValueGrid data={verifyResult.platform_response.summary} />
+                        </div>
+                      ) : (
+                        <div className="text-sm text-gray-500 italic">
+                          Couldn't build a summary - see raw response below.
+                        </div>
+                      )}
+                      {verifyResult.platform_response.raw && (
+                        <details className="mt-2">
+                          <summary className="text-xs text-gray-500 cursor-pointer hover:text-gray-700">
+                            Show raw platform response
+                          </summary>
+                          <pre className="bg-gray-50 border border-gray-200 rounded-md p-3 text-xs overflow-x-auto mt-1.5 max-h-64 overflow-y-auto">
+                            {typeof verifyResult.platform_response.raw === 'string'
+                              ? verifyResult.platform_response.raw
+                              : JSON.stringify(verifyResult.platform_response.raw, null, 2)}
+                          </pre>
+                        </details>
+                      )}
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

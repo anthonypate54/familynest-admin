@@ -1,5 +1,7 @@
 const express = require('express');
+const axios = require('axios');
 const db = require('../services/database');
+const config = require('../config');
 const { requireAuth } = require('../middleware/auth');
 
 const router = express.Router();
@@ -249,6 +251,44 @@ router.get('/:id', async (req, res) => {
     res.status(500).json({
       error: 'Failed to get user',
       message: 'Failed to retrieve user details'
+    });
+  }
+});
+
+/**
+ * GET /api/users/:id/verify-with-platform
+ * Read-only check of what Apple/Google's own servers currently say about
+ * this user's subscription, compared against what our DB has recorded.
+ * Proxies to the Spring backend's AdminSubscriptionVerificationController
+ * (isolated, read-only endpoint - see that file for details) rather than
+ * duplicating Apple/Google API credentials into this admin backend.
+ */
+router.get('/:id/verify-with-platform', async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    if (!config.mainApi.adminApiKey) {
+      return res.status(503).json({
+        error: 'Not configured',
+        message: 'MAIN_API_ADMIN_KEY is not set for this admin backend - cannot call the Spring backend admin endpoint'
+      });
+    }
+
+    const response = await axios.get(
+      `${config.mainApi.url}/admin/subscriptions/${id}/verify-with-platform`,
+      {
+        headers: { 'X-Admin-Key': config.mainApi.adminApiKey },
+        timeout: 15000,
+      }
+    );
+
+    res.json(response.data);
+  } catch (error) {
+    console.error('💥 Verify with platform error:', error.response?.data || error.message);
+    const status = error.response?.status || 500;
+    res.status(status).json({
+      error: 'Failed to verify with platform',
+      message: error.response?.data?.error || error.message
     });
   }
 });
