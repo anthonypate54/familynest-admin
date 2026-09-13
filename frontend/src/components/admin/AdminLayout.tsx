@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Outlet, useLocation, Link } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import { 
@@ -13,10 +13,34 @@ import {
   X
 } from 'lucide-react';
 
+// Below this width, use the hamburger + dropdown instead of the
+// horizontal tab bar (which doesn't fit 5 items at phone widths).
+const MOBILE_BREAKPOINT_PX = 768;
+
 const AdminLayout: React.FC = () => {
   const { admin, logout } = useAuth();
   const location = useLocation();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+
+  // Decide mobile-vs-desktop nav in JS (window.innerWidth) instead of via
+  // CSS media-query classes (Tailwind's "hidden"/"md:block"/"md:hidden").
+  // In the production build, CSS is extracted into its own file and
+  // loaded via a separate <link>, which can finish loading AFTER React
+  // has already mounted the nav into the DOM - so for a brief moment
+  // (sometimes not so brief on a slow connection) the "hidden" rule isn't
+  // registered yet and the full desktop tab bar flashes visible on a
+  // phone before the CSS applies and corrects it. Computing this from
+  // window.innerWidth directly, synchronously on first render, has no
+  // dependency on the CSS file at all, so there's nothing to race.
+  const [isDesktopNav, setIsDesktopNav] = useState(
+    () => window.innerWidth >= MOBILE_BREAKPOINT_PX
+  );
+
+  useEffect(() => {
+    const handleResize = () => setIsDesktopNav(window.innerWidth >= MOBILE_BREAKPOINT_PX);
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
 
   // Close the mobile dropdown whenever a nav link is actually followed,
   // so it doesn't stay open over the next page.
@@ -70,26 +94,27 @@ const AdminLayout: React.FC = () => {
 
             {/* Right: Hamburger (mobile only) + User Info */}
             <div style={{ display: 'flex', alignItems: 'center', gap: '16px', flexWrap: 'wrap' }}>
-              <button
-                onClick={() => setMobileMenuOpen((open) => !open)}
-                className="md:hidden"
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  width: '36px',
-                  height: '36px',
-                  backgroundColor: '#15803d',
-                  color: 'white',
-                  border: 'none',
-                  borderRadius: '6px',
-                  cursor: 'pointer',
-                  flexShrink: 0
-                }}
-                aria-label="Toggle navigation menu"
-              >
-                {mobileMenuOpen ? <X style={{ width: '20px', height: '20px' }} /> : <Menu style={{ width: '20px', height: '20px' }} />}
-              </button>
+              {!isDesktopNav && (
+                <button
+                  onClick={() => setMobileMenuOpen((open) => !open)}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    width: '36px',
+                    height: '36px',
+                    backgroundColor: '#15803d',
+                    color: 'white',
+                    border: 'none',
+                    borderRadius: '6px',
+                    cursor: 'pointer',
+                    flexShrink: 0
+                  }}
+                  aria-label="Toggle navigation menu"
+                >
+                  {mobileMenuOpen ? <X style={{ width: '20px', height: '20px' }} /> : <Menu style={{ width: '20px', height: '20px' }} />}
+                </button>
+              )}
               <div style={{ textAlign: 'right' }}>
                 <div style={{ fontSize: '14px', fontWeight: '500' }}>{admin?.email}</div>
                 <div style={{ fontSize: '12px', color: '#bbf7d0' }}>{admin?.role}</div>
@@ -134,7 +159,8 @@ const AdminLayout: React.FC = () => {
         </div>
 
         {/* Menu Bar - Horizontal Navigation (desktop/tablet only) */}
-        <nav className="hidden md:block" style={{ 
+        {isDesktopNav && (
+        <nav style={{ 
           backgroundColor: '#15803d', 
           borderTop: '1px solid #16a34a' 
         }}>
@@ -181,10 +207,11 @@ const AdminLayout: React.FC = () => {
             </div>
           </div>
         </nav>
+        )}
 
         {/* Menu Bar - Dropdown Navigation (mobile only) */}
-        {mobileMenuOpen && (
-          <nav className="md:hidden" style={{
+        {!isDesktopNav && mobileMenuOpen && (
+          <nav style={{
             backgroundColor: '#15803d',
             borderTop: '1px solid #16a34a'
           }}>
