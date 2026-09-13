@@ -419,14 +419,30 @@ const MarketingExport: React.FC = () => {
               </div>
             )}
 
-            <div className="flex items-center gap-2">
+            {/* flex-wrap + min-w-0 on the input: text inputs have a browser
+                default intrinsic min-width (~170px) that flex-shrink alone
+                doesn't override, so on narrow phone screens this row would
+                overflow the card and push the "Refine SQL" button off the
+                right edge instead of dropping it to its own line. */}
+            <div className="flex items-center gap-2 flex-wrap">
               <input
                 type="text"
                 value={nlDescription}
                 onChange={(e) => setNlDescription(e.target.value)}
-                onKeyDown={(e) => { if (e.key === 'Enter') handleGenerateSql(); }}
+                onKeyDown={(e) => {
+                  // Guard against Android/mobile IME keyboards (Gboard, etc.)
+                  // firing a synthetic Enter keydown while a word/suggestion
+                  // is still mid-composition - handling it then would submit
+                  // nlDescription before the last word is actually committed
+                  // to state, sending Claude a truncated/garbled description.
+                  // Physical keyboards (e.g. on Mac) never trigger composition
+                  // events, which is why this only showed up on mobile.
+                  if (e.key === 'Enter' && !e.nativeEvent.isComposing && e.keyCode !== 229) {
+                    handleGenerateSql();
+                  }
+                }}
                 placeholder={conversation.length > 0 ? 'e.g. also exclude anyone on the free trial' : 'e.g. Everyone who paid more than $50 total, highest spenders first'}
-                className="block w-full px-3 py-2 border border-purple-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
+                className="block flex-1 min-w-[140px] px-3 py-2 border border-purple-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
               />
               <button
                 onClick={handleGenerateSql}
