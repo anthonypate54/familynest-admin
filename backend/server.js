@@ -55,7 +55,13 @@ app.use('*', (req, res) => {
   res.status(404).json({ error: 'Endpoint not found' });
 });
 
-app.listen(PORT, async () => {
+// Explicitly bind to 0.0.0.0 (all IPv4 interfaces) rather than leaving the
+// host unspecified. On this machine, an unspecified host resolves to an
+// IPv6-only (::) socket, which silently refuses plain IPv4 connections
+// (e.g. "curl http://127.0.0.1:3001" -> connection refused, only the IPv6
+// "::1" resolution of "localhost" works). That breaks `adb reverse`, which
+// forwards over IPv4, and would equally break the emulator's 10.0.2.2 path.
+app.listen(PORT, '0.0.0.0', async () => {
   console.log(`🚀 FamilyNest Admin API running on port ${PORT}`);
   console.log(`📊 Health check: http://localhost:${PORT}/health`);
 
