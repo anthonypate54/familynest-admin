@@ -67,7 +67,7 @@ router.get('/segments', async (req, res) => {
 /**
  * POST /api/marketing/generate-sql
  * Translate a plain-English description of a segment into SQL via
- * Claude, then re-validate the result through the exact same
+ * Grok, then re-validate the result through the exact same
  * assertSafeSelect() check every other query goes through - the model's
  * output is never trusted on its own. Does NOT run the query - the
  * frontend still has to click Run Preview, same as a hand-typed query.
@@ -93,7 +93,7 @@ router.post('/generate-sql', async (req, res) => {
     if (!nlToSql.isConfigured()) {
       return res.status(503).json({
         error: 'Not configured',
-        message: 'ANTHROPIC_API_KEY is not set on the server'
+        message: 'XAI_API_KEY is not set on the server'
       });
     }
 

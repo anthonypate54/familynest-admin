@@ -2,24 +2,23 @@ const axios = require('axios');
 const marketingDb = require('./marketingDb');
 
 // Translates an admin's plain-English description of a marketing segment
-// into a single read-only SQL SELECT, using Claude. This is a convenience
-// layer only - the generated SQL is NOT trusted on its own. The caller
-// (routes/marketing.js) always re-validates it through
+// into a single read-only SQL SELECT, using Grok (xAI). This is a
+// convenience layer only - the generated SQL is NOT trusted on its own.
+// The caller (routes/marketing.js) always re-validates it through
 // marketingDb.assertSafeSelect() before returning it to the frontend, and
 // it only ever runs (later, via the normal preview/sync flow) under the
 // restricted marketing_tool DB role. So a bad or malicious-looking
 // generation just fails validation or returns wrong/empty rows - it can't
 // write anywhere it isn't already allowed to.
-const apiKey = process.env.ANTHROPIC_API_KEY || '';
-// Haiku is plenty for this: a short, structured "translate English to SQL"
-// task, not deep reasoning - keeps per-generation cost negligible.
-const MODEL = process.env.ANTHROPIC_MODEL || 'claude-haiku-4-5-20251001';
+const apiKey = process.env.XAI_API_KEY || '';
+// Fast/non-reasoning is plenty for this: a short, structured "translate
+// English to SQL" task. Override with XAI_MODEL if you want a larger one.
+const MODEL = process.env.XAI_MODEL || 'grok-4-fast-non-reasoning';
 
 const client = axios.create({
-  baseURL: 'https://api.anthropic.com/v1',
+  baseURL: 'https://api.x.ai/v1',
   headers: {
-    'x-api-key': apiKey,
-    'anthropic-version': '2023-06-01',
+    Authorization: `Bearer ${apiKey}`,
     'content-type': 'application/json'
   },
   timeout: 20000
@@ -116,7 +115,7 @@ const buildSystemPrompt = async () => {
  */
 const generateSql = async (description, history = []) => {
   if (!isConfigured()) {
-    throw new Error('ANTHROPIC_API_KEY is not set on the server');
+    throw new Error('XAI_API_KEY is not set on the server');
   }
   if (!description || !description.trim()) {
     throw new Error('description is required');
@@ -129,14 +128,16 @@ const generateSql = async (description, history = []) => {
 
   const systemPrompt = await buildSystemPrompt();
 
-  const { data } = await client.post('/messages', {
+  const { data } = await client.post('/chat/completions', {
     model: MODEL,
     max_tokens: 500,
-    system: systemPrompt,
-    messages
+    messages: [
+      { role: 'system', content: systemPrompt },
+      ...messages
+    ]
   });
 
-  const rawText = (data.content || []).map(block => block.text || '').join('').trim();
+  const rawText = (data.choices?.[0]?.message?.content || '').trim();
 
   // Strip markdown code fences in case the model added them despite
   // instructions not to - belt-and-suspenders, the real safety net is

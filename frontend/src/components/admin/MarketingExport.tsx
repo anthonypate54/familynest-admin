@@ -46,7 +46,7 @@ const MarketingExport: React.FC = () => {
   const [result, setResult] = useState<PreviewResult | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  // "Describe your segment in English" -> SQL generation via Claude.
+  // "Describe your segment in English" -> SQL generation via Grok.
   // conversation holds the running back-and-forth so a follow-up message
   // ("also exclude X") refines the previous query instead of starting
   // over - cleared by "Start Over" or whenever a saved segment is picked.
@@ -434,7 +434,7 @@ const MarketingExport: React.FC = () => {
                   // firing a synthetic Enter keydown while a word/suggestion
                   // is still mid-composition - handling it then would submit
                   // nlDescription before the last word is actually committed
-                  // to state, sending Claude a truncated/garbled description.
+                  // to state, sending Grok a truncated/garbled description.
                   // Physical keyboards (e.g. on Mac) never trigger composition
                   // events, which is why this only showed up on mobile.
                   if (e.key === 'Enter' && !e.nativeEvent.isComposing && e.keyCode !== 229) {
